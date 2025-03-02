@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon Skeleton Cursor</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #222;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .dragon-container {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .bone {
+            position: absolute;
+            fill: none;
+            stroke: #ddd;
+            stroke-width: 3px;
+            stroke-linecap: round;
+            transition: all 0.1s ease-out;
+        }
+
+        .head {
+            position: absolute;
+            fill: #ddd;
+        }
+
+        .leg {
+            position: absolute;
+            stroke: #ddd;
+            stroke-width: 3px;
+            fill: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="dragon-container" id="dragon">
+        <!-- Dragon Head -->
+        <svg class="head" width="40" height="30" viewBox="0 0 40 30">
+            <path d="M10 15a5 5 0 0 0 5-5h10a5 5 0 0 1 5 5v5a5 5 0 0 1-5 5H15a5 5 0 0 0-5-5v-5z"/>
+            <path d="M30 10l10 5"/>
+            <path d="M30 20l10-5"/>
+        </svg>
+
+        <!-- Spine -->
+        <svg class="bone" id="spine1" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine2" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine3" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+
+        <!-- Tail -->
+        <svg class="bone" id="tail1" width="25" height="10" viewBox="0 0 25 10"><path d="M5 5h15"/></svg>
+        <svg class="bone" id="tail2" width="20" height="10" viewBox="0 0 20 10"><path d="M5 5h10"/></svg>
+
+        <!-- Legs -->
+        <svg class="leg" id="leg1" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l5 10"/></svg>
+        <svg class="leg" id="leg2" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l-5 10"/></svg>
+        <svg class="leg" id="leg3" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l5 10"/></svg>
+        <svg class="leg" id="leg4" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l-5 10"/></svg>
+    </div>
+
+    <script>
+        const dragon = document.getElementById('dragon');
+        const head = document.querySelector('.head');
+        const spines = document.querySelectorAll('.bone[id^="spine"]');
+        const tails = document.querySelectorAll('.bone[id^="tail"]');
+        const legs = document.querySelectorAll('.leg');
+        
+        const segments = [];
+        let lastX = 0, lastY = 0;
+        let walkCycle = 0;
+
+        // Initialize segments
+        spines.forEach(bone => segments.push({ element: bone, x: 0, y: 0, angle: 0 }));
+        tails.forEach(bone => segments.push({ element: bone, x: 0, y: 0, angle: 0 }));
+        legs.forEach(leg => segments.push({ element: leg, x: 0, y: 0, angle: 0, isLeg: true }));
+
+        function animateDragon(timestamp) {
+            requestAnimationFrame(animateDragon);
+
+            // Update head position (slightly behind cursor)
+            const headX = lastX;
+            const headY = lastY + 20;
+            dragon.style.left = headX + 'px';
+            dragon.style.top = headY + 'px';
+
+            // Calculate movement speed for walk animation
+            const dx = lastX - (headX || lastX);
+            const dy = lastY - (headY - 20 || lastY);
+            const speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
+            walkCycle += speed;
+
+            let prevX = headX;
+            let prevY = headY + 10;
+            let segmentIndex = 0;
+
+            // Update spine segments
+            spines.forEach((spine, index) => {
+                const seg = segments[segmentIndex++];
+                const dx = prevX - seg.x;
+                const dy = prevY - seg.y;
+                const angle = Math.atan2(dy, dx);
+                
+                seg.x = prevX - Math.cos(angle) * 25;
+                seg.y = prevY - Math.sin(angle) * 25;
+                seg.angle = angle;
+
+                seg.element.style.transform = `
+                    translate(${seg.x}px, ${seg.y}px)
+                    rotate(${seg.angle}rad)
+                `;
+
+                prevX = seg.x;
+                prevY = seg.y;
+            });
+
+            // Update tail segments
+            tails.forEach((tail, index) => {
+                const seg = segments[segmentIndex++];
+                const dx = prevX - seg.x;
+                const dy = prevY - seg.y;
+                const angle = Math.atan2(dy, dx);
+                
+                seg.x = prevX - Math.cos(angle) * (20 - index * 5);
+                seg.y = prevY - Math.sin(angle) * (20 - index * 5);
+                seg.angle = angle;
+
+                seg.element.style.transform = `
+                    translate(${seg.x}px, ${seg.y}px)
+                    rotate(${seg.angle}rad)
+                `;
+
+                prevX = seg.x;
+                prevY = seg.y;
+            });
+
+            // Update legs with walking animation
+            const legPositions = [
+                { x: headX - 20, y: headY + 20 },  // Front left
+                { x: headX + 20, y: headY + 20 },  // Front right
+                { x: prevX - 20, y: prevY + 20 },  // Back left
+                { x: prevX + 20, y: prevY + 20 }   // Back right
+            ];
+
+            legs.forEach((leg, index) => {
+                const seg = segments[segmentIndex++];
+                const target = legPositions[index];
+                
+                seg.x += (target.x - seg.x) * 0.2;
+                seg.y += (target.y - seg.y) * 0.2;
+
+                // Walking animation
+                const walkOffset = Math.sin(walkCycle + index * Math.PI/2) * 10;
+                const legAngle = Math.atan2(target.y - seg.y, target.x - seg.x);
+                
+                seg.element.style.transform = `
+                    translate(${seg.x}px, ${seg.y + walkOffset}px)
+                    rotate(${legAngle}rad)
+                `;
+            });
+        }
+
+        // Mouse movement handler
+        document.addEventListener('mousemove', (e) => {
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        // Start animation
+        requestAnimationFrame(animateDragon);
+
+        // Hide/show on window boundaries
+        document.addEventListener('mouseleave', () => dragon.style.opacity = '0');
+        document.addEventListener('mouseenter', () => dragon.style.opacity = '1');
+    </script>
+</body>
+</html>
