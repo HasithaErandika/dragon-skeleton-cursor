@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragon Skeleton Cursor</title>
+    <title>Minimalist Dragon Skeleton Cursor Follower</title>
     <style>
         body {
             margin: 0;
@@ -23,48 +23,52 @@
         .bone {
             position: absolute;
             fill: none;
-            stroke: #ddd;
-            stroke-width: 3px;
+            stroke: #fff; /* White outline like in the image */
+            stroke-width: 1px;
             stroke-linecap: round;
             transition: all 0.1s ease-out;
+            opacity: 0.8;
         }
 
         .head {
             position: absolute;
-            fill: #ddd;
-        }
-
-        .leg {
-            position: absolute;
-            stroke: #ddd;
-            stroke-width: 3px;
             fill: none;
+            stroke: #fff;
+            stroke-width: 1px;
         }
     </style>
 </head>
 <body>
     <div class="dragon-container" id="dragon">
-        <!-- Dragon Head -->
-        <svg class="head" width="40" height="30" viewBox="0 0 40 30">
-            <path d="M10 15a5 5 0 0 0 5-5h10a5 5 0 0 1 5 5v5a5 5 0 0 1-5 5H15a5 5 0 0 0-5-5v-5z"/>
-            <path d="M30 10l10 5"/>
-            <path d="M30 20l10-5"/>
+        <!-- Dragon Head (simple, pointed) -->
+        <svg class="head" width="20" height="20" viewBox="0 0 20 20">
+            <path d="M5 10q5 0 10 0"/>
         </svg>
 
-        <!-- Spine -->
+        <!-- Spine (long, serpentine with many segments) -->
         <svg class="bone" id="spine1" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
         <svg class="bone" id="spine2" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
         <svg class="bone" id="spine3" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine4" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine5" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine6" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine7" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine8" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine9" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
+        <svg class="bone" id="spine10" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
 
-        <!-- Tail -->
-        <svg class="bone" id="tail1" width="25" height="10" viewBox="0 0 25 10"><path d="M5 5h15"/></svg>
-        <svg class="bone" id="tail2" width="20" height="10" viewBox="0 0 20 10"><path d="M5 5h10"/></svg>
+        <!-- Tail (curved, trailing) -->
+        <svg class="bone" id="tail1" width="25" height="10" viewBox="0 0 25 10"><path d="M5 5q15 0 20-5"/></svg>
+        <svg class="bone" id="tail2" width="20" height="10" viewBox="0 0 20 10"><path d="M5 5q10 0 15-5"/></svg>
+        <svg class="bone" id="tail3" width="15" height="10" viewBox="0 0 15 10"><path d="M5 5q5 0 10-5"/></svg>
 
-        <!-- Legs -->
-        <svg class="leg" id="leg1" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l5 10"/></svg>
-        <svg class="leg" id="leg2" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l-5 10"/></svg>
-        <svg class="leg" id="leg3" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l5 10"/></svg>
-        <svg class="leg" id="leg4" width="20" height="30" viewBox="0 0 20 30"><path d="M10 0v20l-5 10"/></svg>
+        <!-- Legs (multiple pairs, simple and delicate) -->
+        <svg class="bone" id="leg1" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l5 10"/></svg> <!-- Front left -->
+        <svg class="bone" id="leg2" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l-5 10"/></svg> <!-- Front right -->
+        <svg class="bone" id="leg3" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l5 10"/></svg> <!-- Middle left -->
+        <svg class="bone" id="leg4" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l-5 10"/></svg> <!-- Middle right -->
+        <svg class="bone" id="leg5" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l5 10"/></svg> <!-- Back left -->
+        <svg class="bone" id="leg6" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l-5 10"/></svg> <!-- Back right -->
     </div>
 
     <script>
@@ -72,13 +76,13 @@
         const head = document.querySelector('.head');
         const spines = document.querySelectorAll('.bone[id^="spine"]');
         const tails = document.querySelectorAll('.bone[id^="tail"]');
-        const legs = document.querySelectorAll('.leg');
+        const legs = document.querySelectorAll('.bone[id^="leg"]');
         
         const segments = [];
         let lastX = 0, lastY = 0;
         let walkCycle = 0;
 
-        // Initialize segments
+        // Initialize segments with properties
         spines.forEach(bone => segments.push({ element: bone, x: 0, y: 0, angle: 0 }));
         tails.forEach(bone => segments.push({ element: bone, x: 0, y: 0, angle: 0 }));
         legs.forEach(leg => segments.push({ element: leg, x: 0, y: 0, angle: 0, isLeg: true }));
@@ -86,31 +90,30 @@
         function animateDragon(timestamp) {
             requestAnimationFrame(animateDragon);
 
-            // Update head position (slightly behind cursor)
-            const headX = lastX;
-            const headY = lastY + 20;
-            dragon.style.left = headX + 'px';
-            dragon.style.top = headY + 'px';
+            // Position head exactly at cursor
+            const cursorX = lastX;
+            const cursorY = lastY;
+            head.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
+            let prevX = cursorX;
+            let prevY = cursorY + 20; // Start spine below head
 
             // Calculate movement speed for walk animation
-            const dx = lastX - (headX || lastX);
-            const dy = lastY - (headY - 20 || lastY);
+            const dx = lastX - (prevX || lastX);
+            const dy = lastY - (prevY - 20 || lastY);
             const speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
             walkCycle += speed;
 
-            let prevX = headX;
-            let prevY = headY + 10;
             let segmentIndex = 0;
 
-            // Update spine segments
+            // Update spine segments (serpentine trailing)
             spines.forEach((spine, index) => {
                 const seg = segments[segmentIndex++];
                 const dx = prevX - seg.x;
                 const dy = prevY - seg.y;
-                const angle = Math.atan2(dy, dx);
+                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + index * 0.3) * 0.2; // Snake-like wiggle
                 
-                seg.x = prevX - Math.cos(angle) * 25;
-                seg.y = prevY - Math.sin(angle) * 25;
+                seg.x += (prevX - Math.cos(angle) * 25 - seg.x) * 0.2; // Smooth trailing
+                seg.y += (prevY - Math.sin(angle) * 25 - seg.y) * 0.2;
                 seg.angle = angle;
 
                 seg.element.style.transform = `
@@ -122,32 +125,33 @@
                 prevY = seg.y;
             });
 
-            // Update tail segments
+            // Update tail segments (curved trailing)
             tails.forEach((tail, index) => {
                 const seg = segments[segmentIndex++];
                 const dx = prevX - seg.x;
                 const dy = prevY - seg.y;
-                const angle = Math.atan2(dy, dx);
+                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + index * 0.4) * 0.3;
                 
-                seg.x = prevX - Math.cos(angle) * (20 - index * 5);
-                seg.y = prevY - Math.sin(angle) * (20 - index * 5);
-                seg.angle = angle;
+                seg.x += (prevX - Math.cos(angle) * (20 - index * 5) - seg.x) * 0.2;
+                seg.y += (prevY - Math.sin(angle) * (20 - index * 5) - seg.y) * 0.2;
 
                 seg.element.style.transform = `
                     translate(${seg.x}px, ${seg.y}px)
-                    rotate(${seg.angle}rad)
+                    rotate(${angle}rad)
                 `;
 
                 prevX = seg.x;
                 prevY = seg.y;
             });
 
-            // Update legs with walking animation
+            // Update legs (attached to spine, walking animation)
             const legPositions = [
-                { x: headX - 20, y: headY + 20 },  // Front left
-                { x: headX + 20, y: headY + 20 },  // Front right
-                { x: prevX - 20, y: prevY + 20 },  // Back left
-                { x: prevX + 20, y: prevY + 20 }   // Back right
+                { x: spines[2].x - 20, y: spines[2].y + 20 },  // Front left (attached to third spine)
+                { x: spines[2].x + 20, y: spines[2].y + 20 },  // Front right
+                { x: spines[5].x - 20, y: spines[5].y + 20 },  // Middle left (attached to sixth spine)
+                { x: spines[5].x + 20, y: spines[5].y + 20 },  // Middle right
+                { x: spines[8].x - 20, y: spines[8].y + 20 },  // Back left (attached to ninth spine)
+                { x: spines[8].x + 20, y: spines[8].y + 20 }   // Back right
             ];
 
             legs.forEach((leg, index) => {
@@ -157,9 +161,8 @@
                 seg.x += (target.x - seg.x) * 0.2;
                 seg.y += (target.y - seg.y) * 0.2;
 
-                // Walking animation
-                const walkOffset = Math.sin(walkCycle + index * Math.PI/2) * 10;
-                const legAngle = Math.atan2(target.y - seg.y, target.x - seg.x);
+                const walkOffset = Math.sin(walkCycle + index * Math.PI/3) * 10; // Smaller, delicate steps
+                const legAngle = Math.atan2(target.y + walkOffset - seg.y, target.x - seg.x);
                 
                 seg.element.style.transform = `
                     translate(${seg.x}px, ${seg.y + walkOffset}px)
