@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Dragon Skeleton Cursor Follower</title>
+    <title>Epic Fire-Breathing Dragon Cursor Follower</title>
     <style>
         body {
             margin: 0;
@@ -14,175 +14,344 @@
             cursor: none;
         }
 
-        .dragon-container {
+        canvas {
             position: fixed;
-            pointer-events: none;
+            top: 0;
+            left: 0;
             z-index: 9999;
-        }
-
-        .bone {
-            position: absolute;
-            fill: none;
-            stroke: #fff; /* White outline like in the image */
-            stroke-width: 1px;
-            stroke-linecap: round;
-            transition: all 0.1s ease-out;
-            opacity: 0.8;
-        }
-
-        .head {
-            position: absolute;
-            fill: none;
-            stroke: #fff;
-            stroke-width: 1px;
         }
     </style>
 </head>
 <body>
-    <div class="dragon-container" id="dragon">
-        <!-- Dragon Head (simple, pointed) -->
-        <svg class="head" width="20" height="20" viewBox="0 0 20 20">
-            <path d="M5 10q5 0 10 0"/>
-        </svg>
-
-        <!-- Spine (long, serpentine with many segments) -->
-        <svg class="bone" id="spine1" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine2" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine3" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine4" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine5" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine6" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine7" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine8" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine9" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-        <svg class="bone" id="spine10" width="30" height="10" viewBox="0 0 30 10"><path d="M5 5h20"/></svg>
-
-        <!-- Tail (curved, trailing) -->
-        <svg class="bone" id="tail1" width="25" height="10" viewBox="0 0 25 10"><path d="M5 5q15 0 20-5"/></svg>
-        <svg class="bone" id="tail2" width="20" height="10" viewBox="0 0 20 10"><path d="M5 5q10 0 15-5"/></svg>
-        <svg class="bone" id="tail3" width="15" height="10" viewBox="0 0 15 10"><path d="M5 5q5 0 10-5"/></svg>
-
-        <!-- Legs (multiple pairs, simple and delicate) -->
-        <svg class="bone" id="leg1" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l5 10"/></svg> <!-- Front left -->
-        <svg class="bone" id="leg2" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l-5 10"/></svg> <!-- Front right -->
-        <svg class="bone" id="leg3" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l5 10"/></svg> <!-- Middle left -->
-        <svg class="bone" id="leg4" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l-5 10"/></svg> <!-- Middle right -->
-        <svg class="bone" id="leg5" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l5 10"/></svg> <!-- Back left -->
-        <svg class="bone" id="leg6" width="15" height="20" viewBox="0 0 15 20"><path d="M7 0v10l-5 10"/></svg> <!-- Back right -->
-    </div>
+    <canvas id="dragonCanvas"></canvas>
 
     <script>
-        const dragon = document.getElementById('dragon');
-        const head = document.querySelector('.head');
-        const spines = document.querySelectorAll('.bone[id^="spine"]');
-        const tails = document.querySelectorAll('.bone[id^="tail"]');
-        const legs = document.querySelectorAll('.bone[id^="leg"]');
-        
-        const segments = [];
-        let lastX = 0, lastY = 0;
+        // Canvas setup
+        const canvas = document.getElementById('dragonCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        // Dragon constants
+        const DRAGON_LENGTH = 150;
+        const SEGMENTS = 10;
+        const SEGMENT_LENGTH = DRAGON_LENGTH / SEGMENTS;
+        const WING_SPAN = 120;
+        const TAIL_LENGTH = 5;
+        const GLOW_RADIUS = 5;
+        const FAST_THRESHOLD = 10;
+        const DRAG_DELAY = 0.3;
+
+        // Dragon state
+        let segments = [];
+        let tail = [];
+        let wings = [];
+        let particles = [];
+        let mouseX = width / 2;
+        let mouseY = height / 2;
+        let lastMouseX = mouseX;
+        let lastMouseY = mouseY;
+        let speed = 0;
+
+        // Initialize walkCycle and wingFlap
         let walkCycle = 0;
+        let wingFlap = 0;
 
-        // Initialize segments with properties
-        spines.forEach(bone => segments.push({ element: bone, x: 0, y: 0, angle: 0 }));
-        tails.forEach(bone => segments.push({ element: bone, x: 0, y: 0, angle: 0 }));
-        legs.forEach(leg => segments.push({ element: leg, x: 0, y: 0, angle: 0, isLeg: true }));
+        // Colors
+        const HEAD_COLOR = '#ff4040';
+        const BODY_COLOR = '#ff7f50';
+        const GLOW_COLOR = 'rgba(255, 64, 64, 0.5)';
+        const WING_COLOR = 'rgba(255, 127, 80, 0.3)';
+        const EYE_COLOR = '#ff4040';
 
-        function animateDragon(timestamp) {
-            requestAnimationFrame(animateDragon);
+        // Initialize segments (start visible, spread out)
+        for (let i = 0; i < SEGMENTS; i++) {
+            const angle = (i / SEGMENTS) * Math.PI * 2;
+            const x = mouseX + Math.cos(angle) * 10 * i;
+            const y = mouseY + Math.sin(angle) * 10 * i;
+            segments.push({ x, y, angle: 0, prevX: x, prevY: y });
+        }
 
-            // Position head exactly at cursor
-            const cursorX = lastX;
-            const cursorY = lastY;
-            head.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
-            let prevX = cursorX;
-            let prevY = cursorY + 20; // Start spine below head
+        // Tail
+        for (let i = 0; i < TAIL_LENGTH; i++) {
+            const x = mouseX - 20 * (i + 1);
+            const y = mouseY;
+            tail.push({ x, y, angle: 0, prevX: x, prevY: y });
+        }
 
-            // Calculate movement speed for walk animation
-            const dx = lastX - (prevX || lastX);
-            const dy = lastY - (prevY - 20 || lastY);
-            const speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
-            walkCycle += speed;
+        // Wings
+        wings.push({ x: mouseX - 40, y: mouseY - 20, angle: 0, scale: 0.5 });
+        wings.push({ x: mouseX + 40, y: mouseY - 20, angle: 0, scale: 0.5 });
 
-            let segmentIndex = 0;
 
-            // Update spine segments (serpentine trailing)
-            spines.forEach((spine, index) => {
-                const seg = segments[segmentIndex++];
-                const dx = prevX - seg.x;
-                const dy = prevY - seg.y;
-                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + index * 0.3) * 0.2; // Snake-like wiggle
-                
-                seg.x += (prevX - Math.cos(angle) * 25 - seg.x) * 0.2; // Smooth trailing
-                seg.y += (prevY - Math.sin(angle) * 25 - seg.y) * 0.2;
-                seg.angle = angle;
+        // Physics and animation loop
+        function animate() {
+            requestAnimationFrame(animate);
 
-                seg.element.style.transform = `
-                    translate(${seg.x}px, ${seg.y}px)
-                    rotate(${seg.angle}rad)
-                `;
+            // Update canvas size
+            if (width !== window.innerWidth || height !== window.innerHeight) {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                mouseX = width / 2;
+                mouseY = height / 2;
 
-                prevX = seg.x;
-                prevY = seg.y;
+                // Re-initialize segments and tail after resize
+                segments = [];
+                tail = [];
+                wings = [];
+
+                for (let i = 0; i < SEGMENTS; i++) {
+                    const angle = (i / SEGMENTS) * Math.PI * 2;
+                    const x = mouseX + Math.cos(angle) * 10 * i;
+                    const y = mouseY + Math.sin(angle) * 10 * i;
+                    segments.push({ x, y, angle: 0, prevX: x, prevY: y });
+                }
+
+                for (let i = 0; i < TAIL_LENGTH; i++) {
+                    const x = mouseX - 20 * (i + 1);
+                    const y = mouseY;
+                    tail.push({ x, y, angle: 0, prevX: x, prevY: y });
+                }
+
+                wings.push({ x: mouseX - 40, y: mouseY - 20, angle: 0, scale: 0.5 });
+                wings.push({ x: mouseX + 40, y: mouseY - 20, angle: 0, scale: 0.5 });
+
+            }
+
+            // Calculate speed based on mouse movement
+            const dx = mouseX - lastMouseX;
+            const dy = mouseY - lastMouseY;
+            speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+
+            // Update head (follow cursor)
+            const head = segments[0];
+            head.x = mouseX;
+            head.y = mouseY;
+
+            // Update spine with serpent-like flow (smoother interpolation, drag delay)
+            for (let i = 1; i < SEGMENTS; i++) {
+                const prev = segments[i - 1];
+                const curr = segments[i];
+                const dx = prev.x - curr.x;
+                const dy = prev.y - curr.y;
+                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + i * 0.2) * 0.1; // Serpent sway
+                const distance = Math.min(SEGMENT_LENGTH * (1 + speed * DRAG_DELAY), Math.sqrt(dx * dx + dy * dy));
+
+                curr.x += (prev.x - Math.cos(angle) * distance - curr.x) * 0.15; // Slower easing for flow
+                curr.y += (prev.y - Math.sin(angle) * distance - curr.y) * 0.15;
+                curr.angle = angle;
+            }
+
+            // Update tail with exaggerated whip (smoother, less damping)
+            let tailPrevX = segments[SEGMENTS - 1].x;
+            let tailPrevY = segments[SEGMENTS - 1].y;
+            for (let i = 0; i < tail.length; i++) {
+                const curr = tail[i];
+                const dx = tailPrevX - curr.x;
+                const dy = tailPrevY - curr.y;
+                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + i * 0.4) * 0.4; // Larger whip
+                const distance = Math.min(SEGMENT_LENGTH * 1.8 * (1 + speed * 0.1), Math.sqrt(dx * dx + dy * dy));
+
+                curr.x += (tailPrevX - Math.cos(angle) * distance - curr.x) * 0.12; // Smoother whip
+                curr.y += (tailPrevY - Math.sin(angle) * distance - curr.y) * 0.12;
+                curr.angle = angle;
+
+                tailPrevX = curr.x;
+                tailPrevY = curr.y;
+            }
+
+            // Update wings (dynamic scale and flap based on speed)
+            const wingScale = Math.min(1.2, speed * 0.3 + 0.4); // Flare more with speed, tuck when slow
+            wings.forEach((wing, index) => {
+                const spinePos = segments[Math.floor(SEGMENTS / 2)];
+                let targetX = spinePos.x + (index === 0 ? -40 : 40); // Determine target X position
+
+                // Prevent wings from reaching the edge of the canvas
+                targetX = Math.max(40, Math.min(width - 40, targetX));
+
+                wing.x += (targetX - wing.x) * 0.2; // Update X position
+
+                wing.y += (spinePos.y - 20 - wing.y) * 0.2;
+                wing.angle = Math.sin(wingFlap + index * Math.PI) * (0.8 + speed * 0.2); // Larger flap with speed
+                wing.scale = wingScale;
             });
 
-            // Update tail segments (curved trailing)
-            tails.forEach((tail, index) => {
-                const seg = segments[segmentIndex++];
-                const dx = prevX - seg.x;
-                const dy = prevY - seg.y;
-                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + index * 0.4) * 0.3;
-                
-                seg.x += (prevX - Math.cos(angle) * (20 - index * 5) - seg.x) * 0.2;
-                seg.y += (prevY - Math.sin(angle) * (20 - index * 5) - seg.y) * 0.2;
 
-                seg.element.style.transform = `
-                    translate(${seg.x}px, ${seg.y}px)
-                    rotate(${angle}rad)
-                `;
 
-                prevX = seg.x;
-                prevY = seg.y;
+            // Update particles (glowing embers from spine, not just head)
+            if (Math.random() < 0.05 + speed * 0.02) { // More particles at higher speed
+                for (let i = 0; i < SEGMENTS; i++) {
+                    if (Math.random() < 0.1) {
+                        particles.push({
+                            x: segments[i].x,
+                            y: segments[i].y,
+                            life: 60 + Math.random() * 20,
+                            alpha: 1,
+                            size: GLOW_RADIUS + Math.random() * 2,
+                            vx: (Math.random() - 0.5) * speed * 0.5, // Initial horizontal velocity
+                            vy: (Math.random() - 0.5) * speed * 0.5  // Initial vertical velocity
+                        });
+                    }
+                }
+            }
+
+            // Fire breath if moving fast
+            if (speed > FAST_THRESHOLD) {
+                spawnFireBreath(mouseX, mouseY);
+            }
+
+            // Update particles (fade out)
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.life--;
+                p.alpha = p.life / 60;
+                p.size = (GLOW_RADIUS + (p.life / 60) * 2) * (1 + speed * 0.1); // Larger particles at speed
+                p.x += p.vx;  // Apply horizontal velocity
+                p.y += p.vy;  // Apply vertical velocity
+
             });
 
-            // Update legs (attached to spine, walking animation)
-            const legPositions = [
-                { x: spines[2].x - 20, y: spines[2].y + 20 },  // Front left (attached to third spine)
-                { x: spines[2].x + 20, y: spines[2].y + 20 },  // Front right
-                { x: spines[5].x - 20, y: spines[5].y + 20 },  // Middle left (attached to sixth spine)
-                { x: spines[5].x + 20, y: spines[5].y + 20 },  // Middle right
-                { x: spines[8].x - 20, y: spines[8].y + 20 },  // Back left (attached to ninth spine)
-                { x: spines[8].x + 20, y: spines[8].y + 20 }   // Back right
-            ];
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
 
-            legs.forEach((leg, index) => {
-                const seg = segments[segmentIndex++];
-                const target = legPositions[index];
-                
-                seg.x += (target.x - seg.x) * 0.2;
-                seg.y += (target.y - seg.y) * 0.2;
+            // Draw shadow (subtle depth)
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = GLOW_COLOR;
 
-                const walkOffset = Math.sin(walkCycle + index * Math.PI/3) * 10; // Smaller, delicate steps
-                const legAngle = Math.atan2(target.y + walkOffset - seg.y, target.x - seg.x);
-                
-                seg.element.style.transform = `
-                    translate(${seg.x}px, ${seg.y + walkOffset}px)
-                    rotate(${legAngle}rad)
-                `;
+            // Draw head with personality (eyes, horns, mouth, glowing aura)
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = HEAD_COLOR;
+            ctx.beginPath();
+            ctx.moveTo(mouseX - 12, mouseY);
+            ctx.lineTo(mouseX + 12, mouseY); // Head base
+            ctx.stroke();
+
+            // Eyes (flickering, glowing)
+            ctx.beginPath();
+            ctx.arc(mouseX - 6, mouseY - 6, 3, 0, Math.PI * 2);
+            ctx.fillStyle = EYE_COLOR;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(mouseX + 6, mouseY - 6, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth (sharp, fiery)
+            ctx.beginPath();
+            ctx.moveTo(mouseX - 8, mouseY + 6);
+            ctx.lineTo(mouseX + 8, mouseY + 6);
+            ctx.strokeStyle = '#ff4040';
+            ctx.stroke();
+
+            // Horns (pulsing with speed)
+            const hornScale = 1 + Math.sin(walkCycle) * 0.1 * speed;
+            ctx.beginPath();
+            ctx.moveTo(mouseX - 6, mouseY - 12);
+            ctx.lineTo(mouseX - 12 * hornScale, mouseY - 24 * hornScale);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(mouseX + 6, mouseY - 12);
+            ctx.lineTo(mouseX + 12 * hornScale, mouseY - 24 * hornScale);
+            ctx.stroke();
+
+            // Glowing aura around head
+            ctx.beginPath();
+            ctx.arc(mouseX, mouseY, 15 + speed * 2, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 64, 64, ${0.3 + speed * 0.1})`;
+            ctx.stroke();
+
+            // Draw spine and tail
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = BODY_COLOR;
+            ctx.beginPath();
+            ctx.moveTo(segments[0].x, segments[0].y);
+            for (let i = 1; i < SEGMENTS; i++) {
+                ctx.lineTo(segments[i].x, segments[i].y);
+            }
+            for (let i = 0; i < tail.length; i++) {
+                ctx.lineTo(tail[i].x, tail[i].y);
+            }
+            ctx.stroke();
+
+            // Draw wings (dynamic, tied to speed and spine)
+            wings.forEach((wing, index) => {
+                ctx.save();
+                ctx.translate(wing.x, wing.y);
+                ctx.rotate(wing.angle);
+                ctx.scale(wing.scale, wing.scale);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-WING_SPAN/2, -WING_SPAN/2);
+                ctx.lineTo(-WING_SPAN/4, -WING_SPAN/4);
+                ctx.lineTo(0, 0);
+                ctx.lineTo(WING_SPAN/4, -WING_SPAN/4);
+                ctx.lineTo(WING_SPAN/2, -WING_SPAN/2);
+                ctx.strokeStyle = WING_COLOR;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Glowing wing edges
+                ctx.strokeStyle = `rgba(255, 127, 80, ${0.5})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
             });
+
+            // Draw particles (glowing embers)
+            ctx.fillStyle = GLOW_COLOR;
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 64, 64, ${p.alpha})`;
+                ctx.fill();
+            });
+
+            walkCycle += speed * 0.08;
+            wingFlap += speed * 0.06;
+        }
+
+        // Fire breath particle effect
+        function spawnFireBreath(x, y) {
+            for (let i = 0; i < 5 + Math.floor(speed); i++) {
+                particles.push({
+                    x: x + (Math.random() - 0.5) * 20,
+                    y: y + (Math.random() - 0.5) * 20,
+                    life: 30 + Math.random() * 30,
+                    alpha: 1,
+                    size: 3 + Math.random() * 5,
+                    vx: (Math.random() - 0.5) * speed * 2,  // Initialize vx
+                    vy: (Math.random() - 0.5) * speed * 2   // Initialize vy
+                });
+            }
         }
 
         // Mouse movement handler
         document.addEventListener('mousemove', (e) => {
-            lastX = e.clientX;
-            lastY = e.clientY;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            mouseX = width / 2;
+            mouseY = height / 2;
         });
 
         // Start animation
-        requestAnimationFrame(animateDragon);
+        animate(); // Call animate to start animation
 
         // Hide/show on window boundaries
-        document.addEventListener('mouseleave', () => dragon.style.opacity = '0');
-        document.addEventListener('mouseenter', () => dragon.style.opacity = '1');
+        document.addEventListener('mouseleave', () => canvas.style.opacity = '0');
+        document.addEventListener('mouseenter', () => canvas.style.opacity = '1');
     </script>
 </body>
 </html>
