@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Epic Fire-Breathing Dragon Cursor Follower</title>
+    <title>Mythical Nightmare Skeletal Dragon with Wider Wings</title>
     <style>
         body {
             margin: 0;
@@ -13,7 +13,6 @@
             overflow: hidden;
             cursor: none;
         }
-
         canvas {
             position: fixed;
             top: 0;
@@ -26,7 +25,6 @@
     <canvas id="dragonCanvas"></canvas>
 
     <script>
-        // Canvas setup
         const canvas = document.getElementById('dragonCanvas');
         const ctx = canvas.getContext('2d');
         let width = window.innerWidth;
@@ -34,324 +32,582 @@
         canvas.width = width;
         canvas.height = height;
 
-        // Dragon constants
-        const DRAGON_LENGTH = 150;
-        const SEGMENTS = 10;
-        const SEGMENT_LENGTH = DRAGON_LENGTH / SEGMENTS;
-        const WING_SPAN = 120;
-        const TAIL_LENGTH = 5;
-        const GLOW_RADIUS = 5;
-        const FAST_THRESHOLD = 10;
-        const DRAG_DELAY = 0.3;
-
-        // Dragon state
-        let segments = [];
-        let tail = [];
-        let wings = [];
-        let particles = [];
-        let mouseX = width / 2;
-        let mouseY = height / 2;
-        let lastMouseX = mouseX;
-        let lastMouseY = mouseY;
-        let speed = 0;
-
-        // Initialize walkCycle and wingFlap
-        let walkCycle = 0;
-        let wingFlap = 0;
+        // Constants
+        const SCALE_FACTOR = 0.8;
+        const HEAD_SIZE = 15 * SCALE_FACTOR;
+        const JAW_LENGTH = 12 * SCALE_FACTOR;
+        const HORN_LENGTH = 20 * SCALE_FACTOR;
+        const GLOW_RADIUS = 4 * SCALE_FACTOR;
+        const SPINE_SEGMENT_SIZE = 12 * SCALE_FACTOR;
+        const SPINE_SEGMENTS = 5;
+        const TAIL_LENGTH = 15 * SCALE_FACTOR;
+        const TAIL_SEGMENTS = 5;
+        const SEGMENT_GAP = 8 * SCALE_FACTOR;
+        const LEG_LENGTH = 20 * SCALE_FACTOR;
+        const FOREARM_LENGTH = 15 * SCALE_FACTOR;
+        const WING_SPAN = 120 * SCALE_FACTOR; // Increased significantly for wider wings
+        const WING_BONES = 6; // More bones for detailed, angular structure
 
         // Colors
-        const HEAD_COLOR = '#ff4040';
-        const BODY_COLOR = '#ff7f50';
-        const GLOW_COLOR = 'rgba(255, 64, 64, 0.5)';
-        const WING_COLOR = 'rgba(255, 127, 80, 0.3)';
-        const EYE_COLOR = '#ff4040';
+        const BONE_COLOR = '#e0d8c3';
+        const SHADOW_COLOR = 'rgba(0, 0, 0, 0.4)';
+        const GLOW_COLOR = 'rgba(173, 216, 230, 0.25)';
+        const GHOSTFLAME_COLOR = 'rgba(50, 205, 50, 0.5)';
+        const WING_MEMBRANE_COLOR = 'rgba(173, 216, 230, 0.2)';
+        const FLAME_PATTERN_COLOR = 'rgba(50, 205, 50, 0.3)';
+        const CRACK_COLOR = 'rgba(50, 205, 50, 0.6)';
 
-        // Initialize segments (start visible, spread out)
-        for (let i = 0; i < SEGMENTS; i++) {
-            const angle = (i / SEGMENTS) * Math.PI * 2;
-            const x = mouseX + Math.cos(angle) * 10 * i;
-            const y = mouseY + Math.sin(angle) * 10 * i;
-            segments.push({ x, y, angle: 0, prevX: x, prevY: y });
+        // Utility
+        function lerp(start, end, t) {
+            return start * (1 - t) + end * t;
         }
 
-        // Tail
-        for (let i = 0; i < TAIL_LENGTH; i++) {
-            const x = mouseX - 20 * (i + 1);
-            const y = mouseY;
-            tail.push({ x, y, angle: 0, prevX: x, prevY: y });
-        }
+        class DragonSkeleton {
+            constructor() {
+                this.mouseX = width / 2;
+                this.mouseY = height / 2;
+                this.targetX = this.mouseX;
+                this.targetY = this.mouseY;
+                this.walkCycle = 0;
+                this.roarTimer = 0;
+                this.breathTimer = 0;
+                this.speed = 0;
+                this.lastMouseX = this.mouseX;
+                this.lastMouseY = this.mouseY;
+                this.spine = [];
+                this.tail = [];
+                this.legs = [];
+                this.wings = [{ bones: [] }, { bones: [] }]; // Left and right wings
+                this.particles = [];
+                this.fogParticles = [];
+                this.crackParticles = [];
+                this.initSkeleton();
+                this.initFog();
+            }
 
-        // Wings
-        wings.push({ x: mouseX - 40, y: mouseY - 20, angle: 0, scale: 0.5 });
-        wings.push({ x: mouseX + 40, y: mouseY - 20, angle: 0, scale: 0.5 });
-
-
-        // Physics and animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Update canvas size
-            if (width !== window.innerWidth || height !== window.innerHeight) {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-                mouseX = width / 2;
-                mouseY = height / 2;
-
-                // Re-initialize segments and tail after resize
-                segments = [];
-                tail = [];
-                wings = [];
-
-                for (let i = 0; i < SEGMENTS; i++) {
-                    const angle = (i / SEGMENTS) * Math.PI * 2;
-                    const x = mouseX + Math.cos(angle) * 10 * i;
-                    const y = mouseY + Math.sin(angle) * 10 * i;
-                    segments.push({ x, y, angle: 0, prevX: x, prevY: y });
+            initSkeleton() {
+                for (let i = 0; i < SPINE_SEGMENTS; i++) {
+                    this.spine.push({
+                        x: this.mouseX,
+                        y: this.mouseY + (i + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP),
+                        crack: Math.random() < 0.5
+                    });
                 }
-
-                for (let i = 0; i < TAIL_LENGTH; i++) {
-                    const x = mouseX - 20 * (i + 1);
-                    const y = mouseY;
-                    tail.push({ x, y, angle: 0, prevX: x, prevY: y });
+                for (let i = 0; i < TAIL_SEGMENTS; i++) {
+                    this.tail.push({
+                        x: this.mouseX,
+                        y: this.mouseY + (SPINE_SEGMENTS + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP) + i * TAIL_LENGTH,
+                        crack: Math.random() < 0.5
+                    });
                 }
-
-                wings.push({ x: mouseX - 40, y: mouseY - 20, angle: 0, scale: 0.5 });
-                wings.push({ x: mouseX + 40, y: mouseY - 20, angle: 0, scale: 0.5 });
-
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Front left
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Front right
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + 4 * (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Back left
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + 4 * (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Back right
+                // Init wings with wider, bat-like structure
+                for (let i = 0; i < WING_BONES; i++) {
+                    this.wings[0].bones.push({ x: this.mouseX, y: this.mouseY + (i + 1) * (WING_SPAN / WING_BONES), crack: Math.random() < 0.5 });
+                    this.wings[1].bones.push({ x: this.mouseX, y: this.mouseY + (i + 1) * (WING_SPAN / WING_BONES), crack: Math.random() < 0.5 });
+                }
             }
 
-            // Calculate speed based on mouse movement
-            const dx = mouseX - lastMouseX;
-            const dy = mouseY - lastMouseY;
-            speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
-
-            // Update head (follow cursor)
-            const head = segments[0];
-            head.x = mouseX;
-            head.y = mouseY;
-
-            // Update spine with serpent-like flow (smoother interpolation, drag delay)
-            for (let i = 1; i < SEGMENTS; i++) {
-                const prev = segments[i - 1];
-                const curr = segments[i];
-                const dx = prev.x - curr.x;
-                const dy = prev.y - curr.y;
-                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + i * 0.2) * 0.1; // Serpent sway
-                const distance = Math.min(SEGMENT_LENGTH * (1 + speed * DRAG_DELAY), Math.sqrt(dx * dx + dy * dy));
-
-                curr.x += (prev.x - Math.cos(angle) * distance - curr.x) * 0.15; // Slower easing for flow
-                curr.y += (prev.y - Math.sin(angle) * distance - curr.y) * 0.15;
-                curr.angle = angle;
+            initFog() {
+                for (let i = 0; i < 50; i++) {
+                    this.fogParticles.push({
+                        x: Math.random() * width,
+                        y: height - Math.random() * 100,
+                        size: Math.random() * 10 + 5,
+                        vx: (Math.random() - 0.5) * 0.2,
+                        opacity: Math.random() * 0.3
+                    });
+                }
             }
 
-            // Update tail with exaggerated whip (smoother, less damping)
-            let tailPrevX = segments[SEGMENTS - 1].x;
-            let tailPrevY = segments[SEGMENTS - 1].y;
-            for (let i = 0; i < tail.length; i++) {
-                const curr = tail[i];
-                const dx = tailPrevX - curr.x;
-                const dy = tailPrevY - curr.y;
-                const angle = Math.atan2(dy, dx) + Math.sin(walkCycle + i * 0.4) * 0.4; // Larger whip
-                const distance = Math.min(SEGMENT_LENGTH * 1.8 * (1 + speed * 0.1), Math.sqrt(dx * dx + dy * dy));
+            update() {
+                const dx = this.targetX - this.lastMouseX;
+                const dy = this.targetY - this.lastMouseY;
+                this.speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
+                this.lastMouseX = this.targetX;
+                this.lastMouseY = this.targetY;
 
-                curr.x += (tailPrevX - Math.cos(angle) * distance - curr.x) * 0.12; // Smoother whip
-                curr.y += (tailPrevY - Math.sin(angle) * distance - curr.y) * 0.12;
-                curr.angle = angle;
+                this.mouseX = lerp(this.mouseX, this.targetX, 0.1);
+                this.mouseY = lerp(this.mouseY, this.targetY + 50 * SCALE_FACTOR, 0.1);
 
-                tailPrevX = curr.x;
-                tailPrevY = curr.y;
-            }
-
-            // Update wings (dynamic scale and flap based on speed)
-            const wingScale = Math.min(1.2, speed * 0.3 + 0.4); // Flare more with speed, tuck when slow
-            wings.forEach((wing, index) => {
-                const spinePos = segments[Math.floor(SEGMENTS / 2)];
-                let targetX = spinePos.x + (index === 0 ? -40 : 40); // Determine target X position
-
-                // Prevent wings from reaching the edge of the canvas
-                targetX = Math.max(40, Math.min(width - 40, targetX));
-
-                wing.x += (targetX - wing.x) * 0.2; // Update X position
-
-                wing.y += (spinePos.y - 20 - wing.y) * 0.2;
-                wing.angle = Math.sin(wingFlap + index * Math.PI) * (0.8 + speed * 0.2); // Larger flap with speed
-                wing.scale = wingScale;
-            });
-
-
-
-            // Update particles (glowing embers from spine, not just head)
-            if (Math.random() < 0.05 + speed * 0.02) { // More particles at higher speed
-                for (let i = 0; i < SEGMENTS; i++) {
-                    if (Math.random() < 0.1) {
-                        particles.push({
-                            x: segments[i].x,
-                            y: segments[i].y,
-                            life: 60 + Math.random() * 20,
-                            alpha: 1,
-                            size: GLOW_RADIUS + Math.random() * 2,
-                            vx: (Math.random() - 0.5) * speed * 0.5, // Initial horizontal velocity
-                            vy: (Math.random() - 0.5) * speed * 0.5  // Initial vertical velocity
+                for (let i = 0; i < SPINE_SEGMENTS; i++) {
+                    const target = i === 0 ? {x: this.mouseX, y: this.mouseY} : this.spine[i - 1];
+                    this.spine[i].x = lerp(this.spine[i].x, target.x, 0.2);
+                    this.spine[i].y = lerp(this.spine[i].y, target.y + (i + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP), 0.2);
+                    if (this.spine[i].crack && Math.random() < 0.05) {
+                        this.crackParticles.push({
+                            x: this.spine[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            y: this.spine[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            opacity: 0.8,
+                            size: Math.random() * 2 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: -(Math.random() * 0.5)
                         });
                     }
                 }
-            }
 
-            // Fire breath if moving fast
-            if (speed > FAST_THRESHOLD) {
-                spawnFireBreath(mouseX, mouseY);
-            }
+                for (let i = 0; i < TAIL_SEGMENTS; i++) {
+                    const target = i === 0 ? this.spine[SPINE_SEGMENTS - 1] : this.tail[i - 1];
+                    this.tail[i].x = lerp(this.tail[i].x, target.x + Math.sin(this.walkCycle + i) * 2 * SCALE_FACTOR, 0.15);
+                    this.tail[i].y = lerp(this.tail[i].y, target.y + (i + 1) * TAIL_LENGTH, 0.15);
+                    if (this.tail[i].crack && Math.random() < 0.05) {
+                        this.crackParticles.push({
+                            x: this.tail[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            y: this.tail[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            opacity: 0.8,
+                            size: Math.random() * 2 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: -(Math.random() * 0.5)
+                        });
+                    }
+                }
 
-            // Update particles (fade out)
-            particles = particles.filter(p => p.life > 0);
-            particles.forEach(p => {
-                p.life--;
-                p.alpha = p.life / 60;
-                p.size = (GLOW_RADIUS + (p.life / 60) * 2) * (1 + speed * 0.1); // Larger particles at speed
-                p.x += p.vx;  // Apply horizontal velocity
-                p.y += p.vy;  // Apply vertical velocity
+                const legCycle = Math.sin(this.walkCycle) * 5 * SCALE_FACTOR;
+                this.legs[0].base = this.spine[0]; // Front left
+                this.legs[0].elbow.x = this.spine[0].x - LEG_LENGTH + legCycle;
+                this.legs[0].elbow.y = this.spine[0].y + LEG_LENGTH - legCycle;
+                this.legs[0].foot.x = this.spine[0].x - LEG_LENGTH - FOREARM_LENGTH / 2 + legCycle;
+                this.legs[0].foot.y = this.spine[0].y + LEG_LENGTH + FOREARM_LENGTH;
 
-            });
+                this.legs[1].base = this.spine[0]; // Front right
+                this.legs[1].elbow.x = this.spine[0].x + LEG_LENGTH - legCycle;
+                this.legs[1].elbow.y = this.spine[0].y + LEG_LENGTH + legCycle;
+                this.legs[1].foot.x = this.spine[0].x + LEG_LENGTH + FOREARM_LENGTH / 2 - legCycle;
+                this.legs[1].foot.y = this.spine[0].y + LEG_LENGTH + FOREARM_LENGTH;
 
-            // Clear canvas
-            ctx.clearRect(0, 0, width, height);
+                this.legs[2].base = this.spine[3]; // Back left
+                this.legs[2].elbow.x = this.spine[3].x - LEG_LENGTH - legCycle;
+                this.legs[2].elbow.y = this.spine[3].y + LEG_LENGTH + legCycle;
+                this.legs[2].foot.x = this.spine[3].x - LEG_LENGTH - FOREARM_LENGTH / 2 - legCycle;
+                this.legs[2].foot.y = this.spine[3].y + LEG_LENGTH + FOREARM_LENGTH;
 
-            // Draw shadow (subtle depth)
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = GLOW_COLOR;
+                this.legs[3].base = this.spine[3]; // Back right
+                this.legs[3].elbow.x = this.spine[3].x + LEG_LENGTH + legCycle;
+                this.legs[3].elbow.y = this.spine[3].y + LEG_LENGTH - legCycle;
+                this.legs[3].foot.x = this.spine[3].x + LEG_LENGTH + FOREARM_LENGTH / 2 + legCycle;
+                this.legs[3].foot.y = this.spine[3].y + LEG_LENGTH + FOREARM_LENGTH;
 
-            // Draw head with personality (eyes, horns, mouth, glowing aura)
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = HEAD_COLOR;
-            ctx.beginPath();
-            ctx.moveTo(mouseX - 12, mouseY);
-            ctx.lineTo(mouseX + 12, mouseY); // Head base
-            ctx.stroke();
+                // Update wings with wider, bat-like structure
+                const wingFlap = Math.sin(this.walkCycle) * 20 * SCALE_FACTOR * (1 + this.speed * 0.1);
+                for (let i = 0; i < WING_BONES; i++) {
+                    const base = this.spine[1];
+                    const angle = (i / (WING_BONES - 1)) * Math.PI / 2 - Math.PI / 4;
+                    const length = WING_SPAN * (1 - i / (WING_BONES - 1)); // Taper toward tips
+                    this.wings[0].bones[i].x = lerp(this.wings[0].bones[i].x, base.x - length * Math.cos(angle) + wingFlap, 0.2);
+                    this.wings[0].bones[i].y = lerp(this.wings[0].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, 0.2);
+                    this.wings[1].bones[i].x = lerp(this.wings[1].bones[i].x, base.x + length * Math.cos(angle) - wingFlap, 0.2);
+                    this.wings[1].bones[i].y = lerp(this.wings[1].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, 0.2);
+                    if (this.wings[0].bones[i].crack && Math.random() < 0.05) {
+                        this.crackParticles.push({
+                            x: this.wings[0].bones[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            y: this.wings[0].bones[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            opacity: 0.8,
+                            size: Math.random() * 2 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: -(Math.random() * 0.5)
+                        });
+                    }
+                    if (this.wings[1].bones[i].crack && Math.random() < 0.05) {
+                        this.crackParticles.push({
+                            x: this.wings[1].bones[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            y: this.wings[1].bones[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
+                            opacity: 0.8,
+                            size: Math.random() * 2 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: -(Math.random() * 0.5)
+                        });
+                    }
+                }
 
-            // Eyes (flickering, glowing)
-            ctx.beginPath();
-            ctx.arc(mouseX - 6, mouseY - 6, 3, 0, Math.PI * 2);
-            ctx.fillStyle = EYE_COLOR;
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(mouseX + 6, mouseY - 6, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Mouth (sharp, fiery)
-            ctx.beginPath();
-            ctx.moveTo(mouseX - 8, mouseY + 6);
-            ctx.lineTo(mouseX + 8, mouseY + 6);
-            ctx.strokeStyle = '#ff4040';
-            ctx.stroke();
-
-            // Horns (pulsing with speed)
-            const hornScale = 1 + Math.sin(walkCycle) * 0.1 * speed;
-            ctx.beginPath();
-            ctx.moveTo(mouseX - 6, mouseY - 12);
-            ctx.lineTo(mouseX - 12 * hornScale, mouseY - 24 * hornScale);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(mouseX + 6, mouseY - 12);
-            ctx.lineTo(mouseX + 12 * hornScale, mouseY - 24 * hornScale);
-            ctx.stroke();
-
-            // Glowing aura around head
-            ctx.beginPath();
-            ctx.arc(mouseX, mouseY, 15 + speed * 2, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 64, 64, ${0.3 + speed * 0.1})`;
-            ctx.stroke();
-
-            // Draw spine and tail
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = BODY_COLOR;
-            ctx.beginPath();
-            ctx.moveTo(segments[0].x, segments[0].y);
-            for (let i = 1; i < SEGMENTS; i++) {
-                ctx.lineTo(segments[i].x, segments[i].y);
-            }
-            for (let i = 0; i < tail.length; i++) {
-                ctx.lineTo(tail[i].x, tail[i].y);
-            }
-            ctx.stroke();
-
-            // Draw wings (dynamic, tied to speed and spine)
-            wings.forEach((wing, index) => {
-                ctx.save();
-                ctx.translate(wing.x, wing.y);
-                ctx.rotate(wing.angle);
-                ctx.scale(wing.scale, wing.scale);
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(-WING_SPAN/2, -WING_SPAN/2);
-                ctx.lineTo(-WING_SPAN/4, -WING_SPAN/4);
-                ctx.lineTo(0, 0);
-                ctx.lineTo(WING_SPAN/4, -WING_SPAN/4);
-                ctx.lineTo(WING_SPAN/2, -WING_SPAN/2);
-                ctx.strokeStyle = WING_COLOR;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // Glowing wing edges
-                ctx.strokeStyle = `rgba(255, 127, 80, ${0.5})`;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.restore();
-            });
-
-            // Draw particles (glowing embers)
-            ctx.fillStyle = GLOW_COLOR;
-            particles.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 64, 64, ${p.alpha})`;
-                ctx.fill();
-            });
-
-            walkCycle += speed * 0.08;
-            wingFlap += speed * 0.06;
-        }
-
-        // Fire breath particle effect
-        function spawnFireBreath(x, y) {
-            for (let i = 0; i < 5 + Math.floor(speed); i++) {
-                particles.push({
-                    x: x + (Math.random() - 0.5) * 20,
-                    y: y + (Math.random() - 0.5) * 20,
-                    life: 30 + Math.random() * 30,
-                    alpha: 1,
-                    size: 3 + Math.random() * 5,
-                    vx: (Math.random() - 0.5) * speed * 2,  // Initialize vx
-                    vy: (Math.random() - 0.5) * speed * 2   // Initialize vy
+                // Update particles (dust, breath, cracks)
+                if (this.speed > 1 || Math.random() < 0.1) {
+                    this.particles.push({
+                        x: this.mouseX + (Math.random() - 0.5) * HEAD_SIZE,
+                        y: this.mouseY + (Math.random() - 0.5) * HEAD_SIZE,
+                        opacity: 0.6,
+                        size: Math.random() * 2 * SCALE_FACTOR,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: -(Math.random() * 0.5)
+                    });
+                }
+                if (this.breathTimer > 0) {
+                    for (let i = 0; i < 3; i++) {
+                        this.particles.push({
+                            x: this.mouseX + (Math.random() - 0.5) * HEAD_SIZE,
+                            y: this.mouseY + HEAD_SIZE,
+                            opacity: 1,
+                            size: Math.random() * 4 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: Math.random() * 5 + 2
+                        });
+                    }
+                    this.breathTimer--;
+                }
+                this.particles = this.particles.filter(p => p.opacity > 0);
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.opacity -= 0.02;
                 });
+
+                this.crackParticles = this.crackParticles.filter(p => p.opacity > 0);
+                this.crackParticles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.opacity -= 0.02;
+                });
+
+                this.fogParticles.forEach(p => {
+                    const distToDragon = Math.sqrt((p.x - this.mouseX) ** 2 + (p.y - (this.mouseY + 50 * SCALE_FACTOR)) ** 2);
+                    const pushForce = Math.max(0, 50 - distToDragon) * 0.01;
+                    p.x += p.vx + (this.mouseX - p.x) * pushForce;
+                    p.y += (this.mouseY + 50 * SCALE_FACTOR - p.y) * pushForce;
+                    if (p.x < 0 || p.x > width) p.vx *= -1;
+                    p.opacity = Math.max(0.1, Math.min(0.3, p.opacity + (Math.random() - 0.5) * 0.01));
+                });
+
+                if (this.roarTimer > 0) {
+                    this.roarTimer--;
+                    this.mouseX += (Math.random() - 0.5) * 5;
+                    this.mouseY += (Math.random() - 0.5) * 5;
+                }
+
+                this.walkCycle += 0.1 + this.speed * 0.02;
+            }
+
+            draw() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.shadowColor = GLOW_COLOR;
+                ctx.shadowBlur = 10;
+
+                // Draw fog with mist parting
+                this.fogParticles.forEach(p => {
+                    ctx.fillStyle = `rgba(173, 216, 230, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw head (long, jagged skull with broken horn)
+                const headGradient = ctx.createLinearGradient(this.mouseX - HEAD_SIZE, this.mouseY - HEAD_SIZE, this.mouseX + HEAD_SIZE, this.mouseY + HEAD_SIZE);
+                headGradient.addColorStop(0, '#fff');
+                headGradient.addColorStop(1, BONE_COLOR);
+                ctx.fillStyle = headGradient;
+                ctx.beginPath();
+                ctx.arc(this.mouseX, this.mouseY, HEAD_SIZE, 0, Math.PI * 2);
+                ctx.fill();
+
+                const eyeGlow = this.speed > 5 ? `rgba(50, 205, 50, ${0.7 + Math.sin(this.walkCycle) * 0.3})` : `rgba(173, 216, 230, ${0.7 + Math.sin(this.walkCycle) * 0.3})`;
+                ctx.fillStyle = eyeGlow;
+                ctx.beginPath();
+                ctx.arc(this.mouseX - 6 * SCALE_FACTOR, this.mouseY - 4 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.mouseX + 6 * SCALE_FACTOR, this.mouseY - 4 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = SHADOW_COLOR;
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX - 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX, this.mouseY + 9 * SCALE_FACTOR);
+                ctx.fill();
+
+                ctx.strokeStyle = BONE_COLOR;
+                ctx.lineWidth = 2 * SCALE_FACTOR;
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX - HEAD_SIZE, this.mouseY);
+                ctx.lineTo(this.mouseX - HEAD_SIZE - JAW_LENGTH, this.mouseY + 8 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX - HEAD_SIZE, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX + HEAD_SIZE, this.mouseY);
+                ctx.lineTo(this.mouseX + HEAD_SIZE + JAW_LENGTH, this.mouseY + 8 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX + HEAD_SIZE, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.stroke();
+
+                const jawOffset = Math.sin(this.walkCycle) * 1.5 * SCALE_FACTOR * (this.roarTimer > 0 ? 2 : this.breathTimer > 0 ? 3 : 1);
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX - HEAD_SIZE + 2 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX - HEAD_SIZE - JAW_LENGTH + 4 * SCALE_FACTOR, this.mouseY + 12 * SCALE_FACTOR + jawOffset);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX + HEAD_SIZE - 2 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX + HEAD_SIZE + JAW_LENGTH - 4 * SCALE_FACTOR, this.mouseY + 12 * SCALE_FACTOR + jawOffset);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX - 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX - 4 * SCALE_FACTOR, this.mouseY + 9 * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX, this.mouseY + 10 * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.lineTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 8 * SCALE_FACTOR);
+                ctx.stroke();
+
+                // Horns (one broken)
+                const hornScale = 1 + Math.sin(this.walkCycle) * 0.1;
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX - 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE);
+                ctx.lineTo(this.mouseX - 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR * 0.5); // Broken horn
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX + 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE);
+                ctx.lineTo(this.mouseX + 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR);
+                ctx.stroke();
+
+                // Draw wings with wider, bat-like structure and sharp angles
+                this.wings.forEach((wing, index) => {
+                    ctx.strokeStyle = BONE_COLOR;
+                    ctx.lineWidth = 2 * SCALE_FACTOR;
+                    ctx.beginPath();
+                    ctx.moveTo(this.spine[1].x, this.spine[1].y);
+                    for (let i = 0; i < WING_BONES; i++) {
+                        const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4; // More angular spread
+                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2; // Wider at base, tapering
+                        const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
+                        const y = this.spine[1].y - length * Math.sin(angleOffset);
+                        ctx.lineTo(x, y);
+                        if (i === WING_BONES - 1) {
+                            ctx.lineTo(x + (index === 0 ? -15 : 15) * SCALE_FACTOR, y + 10 * SCALE_FACTOR); // Sharper tip
+                        }
+                    }
+                    ctx.stroke();
+
+                    // Ghostly membrane with flame patterns
+                    ctx.fillStyle = `${WING_MEMBRANE_COLOR.slice(0, -2)}${0.2 + Math.sin(this.walkCycle) * 0.1})`;
+                    ctx.beginPath();
+                    ctx.moveTo(this.spine[1].x, this.spine[1].y);
+                    for (let i = 0; i < WING_BONES; i++) {
+                        const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4;
+                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2;
+                        const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
+                        const y = this.spine[1].y - length * Math.sin(angleOffset);
+                        ctx.lineTo(x, y);
+                        if (i === WING_BONES - 1) {
+                            ctx.lineTo(x + (index === 0 ? -15 : 15) * SCALE_FACTOR, y + 10 * SCALE_FACTOR);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Flame-like patterns on membrane
+                    ctx.fillStyle = `${FLAME_PATTERN_COLOR.slice(0, -2)}${0.3 + Math.sin(this.walkCycle + index) * 0.1})`;
+                    for (let i = 0; i < 4; i++) { // More patterns for width
+                        ctx.beginPath();
+                        const x = lerp(this.spine[1].x, wing.bones[Math.floor(WING_BONES / 2)].x, i / 4) + (index === 0 ? -10 : 10) * SCALE_FACTOR;
+                        const y = lerp(this.spine[1].y, wing.bones[Math.floor(WING_BONES / 2)].y, i / 4) - 20 * SCALE_FACTOR;
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + (index === 0 ? -10 : 10) * SCALE_FACTOR, y + 20 * SCALE_FACTOR);
+                        ctx.lineTo(x, y + 30 * SCALE_FACTOR);
+                        ctx.fill();
+                    }
+
+                    // Glowing cracks on wing bones
+                    ctx.strokeStyle = CRACK_COLOR;
+                    for (let i = 0; i < WING_BONES; i++) {
+                        if (wing.bones[i].crack) {
+                            const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4;
+                            const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2;
+                            const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
+                            const y = this.spine[1].y - length * Math.sin(angleOffset);
+                            ctx.beginPath();
+                            ctx.moveTo(x - 5 * SCALE_FACTOR, y);
+                            ctx.lineTo(x + 5 * SCALE_FACTOR, y + 5 * SCALE_FACTOR);
+                            ctx.stroke();
+                        }
+                    }
+                });
+
+                // Draw spine with ghostflame and cracks
+                for (let i = 0; i < SPINE_SEGMENTS; i++) {
+                    const s = this.spine[i];
+                    const spineGradient = ctx.createLinearGradient(s.x - SPINE_SEGMENT_SIZE, s.y - SPINE_SEGMENT_SIZE, s.x + SPINE_SEGMENT_SIZE, s.y + SPINE_SEGMENT_SIZE);
+                    spineGradient.addColorStop(0, '#fff');
+                    spineGradient.addColorStop(1, BONE_COLOR);
+                    ctx.fillStyle = spineGradient;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, SPINE_SEGMENT_SIZE / 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = BONE_COLOR;
+                    ctx.beginPath();
+                    ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y);
+                    ctx.lineTo(s.x - SPINE_SEGMENT_SIZE * 1.2, s.y + Math.sin(this.walkCycle + i) * 4 * SCALE_FACTOR);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y);
+                    ctx.lineTo(s.x + SPINE_SEGMENT_SIZE * 1.2, s.y + Math.sin(this.walkCycle + i) * 4 * SCALE_FACTOR);
+                    ctx.stroke();
+
+                    if (s.crack) {
+                        ctx.strokeStyle = CRACK_COLOR;
+                        ctx.beginPath();
+                        ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y);
+                        ctx.lineTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y + 5 * SCALE_FACTOR);
+                        ctx.stroke();
+                    }
+
+                    if (i < 3) {
+                        ctx.beginPath();
+                        ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y + 2 * SCALE_FACTOR);
+                        ctx.lineTo(s.x - SPINE_SEGMENT_SIZE * 1.5, s.y + 10 * SCALE_FACTOR);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y + 2 * SCALE_FACTOR);
+                        ctx.lineTo(s.x + SPINE_SEGMENT_SIZE * 1.5, s.y + 10 * SCALE_FACTOR);
+                        ctx.stroke();
+
+                        ctx.fillStyle = `${GHOSTFLAME_COLOR.slice(0, -2)}${0.5 + Math.sin(this.walkCycle + i) * 0.3})`;
+                        ctx.beginPath();
+                        ctx.arc(s.x, s.y + 5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Draw legs (long and bony, crawling)
+                this.legs.forEach(leg => {
+                    const legGradient = ctx.createLinearGradient(leg.base.x, leg.base.y, leg.foot.x, leg.foot.y);
+                    legGradient.addColorStop(0, '#fff');
+                    legGradient.addColorStop(1, BONE_COLOR);
+                    ctx.strokeStyle = legGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(leg.base.x, leg.base.y);
+                    ctx.lineTo(leg.elbow.x, leg.elbow.y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(leg.elbow.x, leg.elbow.y);
+                    ctx.lineTo(leg.foot.x, leg.foot.y);
+                    ctx.stroke();
+                    ctx.lineWidth = 3 * SCALE_FACTOR;
+                    ctx.beginPath();
+                    ctx.moveTo(leg.foot.x, leg.foot.y);
+                    ctx.lineTo(leg.foot.x - 5 * SCALE_FACTOR, leg.foot.y + 8 * SCALE_FACTOR);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(leg.foot.x, leg.foot.y);
+                    ctx.lineTo(leg.foot.x + 5 * SCALE_FACTOR, leg.foot.y + 8 * SCALE_FACTOR);
+                    ctx.stroke();
+                });
+
+                // Draw tail (bone whip with shattered tip)
+                for (let i = 0; i < TAIL_SEGMENTS; i++) {
+                    const t = this.tail[i];
+                    const width = (TAIL_SEGMENTS - i) * 2 * SCALE_FACTOR;
+                    const tailGradient = ctx.createLinearGradient(t.x - width / 2, t.y, t.x + width / 2, t.y + TAIL_LENGTH);
+                    tailGradient.addColorStop(0, '#fff');
+                    tailGradient.addColorStop(1, BONE_COLOR);
+                    ctx.strokeStyle = tailGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(t.x - width / 2, t.y);
+                    ctx.lineTo(t.x + width / 2, t.y);
+                    ctx.lineTo(t.x, t.y + TAIL_LENGTH);
+                    ctx.stroke();
+                    if (t.crack) {
+                        ctx.strokeStyle = CRACK_COLOR;
+                        ctx.beginPath();
+                        ctx.moveTo(t.x - width / 2, t.y);
+                        ctx.lineTo(t.x + width / 2, t.y + TAIL_LENGTH / 2);
+                        ctx.stroke();
+                    }
+                }
+                const tip = this.tail[TAIL_SEGMENTS - 1];
+                ctx.strokeStyle = BONE_COLOR;
+                ctx.beginPath();
+                ctx.moveTo(tip.x, tip.y + TAIL_LENGTH);
+                ctx.lineTo(tip.x + 5 * SCALE_FACTOR, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR);
+                ctx.lineTo(tip.x - 5 * SCALE_FACTOR, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR);
+                ctx.stroke();
+                ctx.fillStyle = GHOSTFLAME_COLOR;
+                ctx.beginPath();
+                ctx.arc(tip.x, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw particles
+                this.particles.forEach(p => {
+                    ctx.fillStyle = this.breathTimer > 0 ? `${GHOSTFLAME_COLOR.slice(0, -2)}${p.opacity})` : `rgba(224, 216, 195, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                this.crackParticles.forEach(p => {
+                    ctx.fillStyle = `rgba(224, 216, 195, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw soul core cursor
+                const soulGradient = ctx.createRadialGradient(this.targetX, this.targetY, 0, this.targetX, this.targetY, 10 * SCALE_FACTOR);
+                soulGradient.addColorStop(0, 'rgba(50, 205, 50, 1)');
+                soulGradient.addColorStop(1, 'rgba(173, 216, 230, 0)');
+                ctx.fillStyle = soulGradient;
+                ctx.beginPath();
+                ctx.arc(this.targetX, this.targetY, 10 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            resize() {
+                this.mouseX = width / 2;
+                this.mouseY = height / 2;
+                this.targetX = this.mouseX;
+                this.targetY = this.mouseY;
+                this.initSkeleton();
+                this.fogParticles = [];
+                this.initFog();
+            }
+
+            roar() {
+                this.roarTimer = 20;
+            }
+
+            breathe() {
+                this.breathTimer = 30;
             }
         }
 
-        // Mouse movement handler
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+        const dragon = new DragonSkeleton();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            dragon.update();
+            dragon.draw();
+        }
+
+        let lastClickTime = 0;
+        document.addEventListener('dblclick', () => {
+            const now = Date.now();
+            if (now - lastClickTime > 300) {
+                dragon.roar();
+                lastClickTime = now;
+            }
         });
 
-        // Resize handler
+        document.addEventListener('mousedown', () => {
+            dragon.breathe();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            dragon.targetX = e.clientX;
+            dragon.targetY = e.clientY;
+        });
+
         window.addEventListener('resize', () => {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            mouseX = width / 2;
-            mouseY = height / 2;
+            dragon.resize();
         });
 
-        // Start animation
-        animate(); // Call animate to start animation
-
-        // Hide/show on window boundaries
         document.addEventListener('mouseleave', () => canvas.style.opacity = '0');
         document.addEventListener('mouseenter', () => canvas.style.opacity = '1');
+
+        animate();
     </script>
 </body>
 </html>
