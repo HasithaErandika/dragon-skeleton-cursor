@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mythical Nightmare Skeletal Dragon with Wider Wings</title>
     <style>
+        /* Original Styles */
         body {
             margin: 0;
             padding: 0;
@@ -19,10 +20,112 @@
             left: 0;
             z-index: 9999;
         }
+
+        /* New UI/UX Enhancements */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); /* Enhanced background */
+            transition: background 0.5s ease;
+        }
+
+        canvas {
+            transition: opacity 0.3s ease, filter 0.5s ease; /* Smooth transitions */
+        }
+
+        /* Overlay for UI */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000; /* Above canvas */
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            color: #e0d8c3;
+            opacity: 0.9;
+            transition: opacity 0.5s ease;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(173, 216, 230, 0.5), 0 0 20px rgba(50, 205, 50, 0.3);
+            animation: glowPulse 3s infinite ease-in-out;
+        }
+
+        .controls {
+            font-size: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.4);
+            max-width: 350px;
+            align-self: flex-end;
+            animation: slideUp 1s ease-in-out;
+            pointer-events: auto;
+        }
+
+        .controls p {
+            margin: 5px 0;
+        }
+
+        .toggle-effects {
+            background: rgba(50, 205, 50, 0.3);
+            border: 1px solid #32cd32;
+            color: #e0d8c3;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .toggle-effects:hover {
+            background: rgba(50, 205, 50, 0.6);
+            transform: scale(1.05);
+        }
+
+        /* Animations */
+        @keyframes glowPulse {
+            0%, 100% { text-shadow: 0 0 10px rgba(173, 216, 230, 0.5); }
+            50% { text-shadow: 0 0 20px rgba(173, 216, 230, 0.8), 0 0 30px rgba(50, 205, 50, 0.5); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 0.9; }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .title { font-size: 1.8rem; }
+            .controls { font-size: 0.9rem; padding: 10px 15px; max-width: 100%; }
+        }
     </style>
 </head>
 <body>
     <canvas id="dragonCanvas"></canvas>
+    <!-- New UI Overlay -->
+    <div class="overlay">
+        <div class="title">Mythical Nightmare Dragon</div>
+        <div class="controls">
+            <p>Move cursor to guide the dragon</p>
+            <p>Click to breathe ghostly flames</p>
+            <p>Double-click to trigger a roar</p>
+            <button class="toggle-effects" onclick="toggleEffects()">Toggle Effects</button>
+        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById('dragonCanvas');
@@ -45,8 +148,8 @@
         const SEGMENT_GAP = 8 * SCALE_FACTOR;
         const LEG_LENGTH = 20 * SCALE_FACTOR;
         const FOREARM_LENGTH = 15 * SCALE_FACTOR;
-        const WING_SPAN = 120 * SCALE_FACTOR; // Increased significantly for wider wings
-        const WING_BONES = 6; // More bones for detailed, angular structure
+        const WING_SPAN = 120 * SCALE_FACTOR;
+        const WING_BONES = 6;
 
         // Colors
         const BONE_COLOR = '#e0d8c3';
@@ -77,10 +180,11 @@
                 this.spine = [];
                 this.tail = [];
                 this.legs = [];
-                this.wings = [{ bones: [] }, { bones: [] }]; // Left and right wings
+                this.wings = [{ bones: [] }, { bones: [] }];
                 this.particles = [];
                 this.fogParticles = [];
                 this.crackParticles = [];
+                this.effectsEnabled = true; // New: Toggle for effects
                 this.initSkeleton();
                 this.initFog();
             }
@@ -100,11 +204,10 @@
                         crack: Math.random() < 0.5
                     });
                 }
-                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Front left
-                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Front right
-                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + 4 * (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Back left
-                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + 4 * (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} }); // Back right
-                // Init wings with wider, bat-like structure
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} });
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} });
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + 4 * (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} });
+                this.legs.push({ base: {x: this.mouseX, y: this.mouseY + 4 * (SPINE_SEGMENT_SIZE + SEGMENT_GAP)}, elbow: {}, foot: {} });
                 for (let i = 0; i < WING_BONES; i++) {
                     this.wings[0].bones.push({ x: this.mouseX, y: this.mouseY + (i + 1) * (WING_SPAN / WING_BONES), crack: Math.random() < 0.5 });
                     this.wings[1].bones.push({ x: this.mouseX, y: this.mouseY + (i + 1) * (WING_SPAN / WING_BONES), crack: Math.random() < 0.5 });
@@ -166,36 +269,35 @@
                 }
 
                 const legCycle = Math.sin(this.walkCycle) * 5 * SCALE_FACTOR;
-                this.legs[0].base = this.spine[0]; // Front left
+                this.legs[0].base = this.spine[0];
                 this.legs[0].elbow.x = this.spine[0].x - LEG_LENGTH + legCycle;
                 this.legs[0].elbow.y = this.spine[0].y + LEG_LENGTH - legCycle;
                 this.legs[0].foot.x = this.spine[0].x - LEG_LENGTH - FOREARM_LENGTH / 2 + legCycle;
                 this.legs[0].foot.y = this.spine[0].y + LEG_LENGTH + FOREARM_LENGTH;
 
-                this.legs[1].base = this.spine[0]; // Front right
+                this.legs[1].base = this.spine[0];
                 this.legs[1].elbow.x = this.spine[0].x + LEG_LENGTH - legCycle;
                 this.legs[1].elbow.y = this.spine[0].y + LEG_LENGTH + legCycle;
                 this.legs[1].foot.x = this.spine[0].x + LEG_LENGTH + FOREARM_LENGTH / 2 - legCycle;
                 this.legs[1].foot.y = this.spine[0].y + LEG_LENGTH + FOREARM_LENGTH;
 
-                this.legs[2].base = this.spine[3]; // Back left
+                this.legs[2].base = this.spine[3];
                 this.legs[2].elbow.x = this.spine[3].x - LEG_LENGTH - legCycle;
                 this.legs[2].elbow.y = this.spine[3].y + LEG_LENGTH + legCycle;
                 this.legs[2].foot.x = this.spine[3].x - LEG_LENGTH - FOREARM_LENGTH / 2 - legCycle;
                 this.legs[2].foot.y = this.spine[3].y + LEG_LENGTH + FOREARM_LENGTH;
 
-                this.legs[3].base = this.spine[3]; // Back right
+                this.legs[3].base = this.spine[3];
                 this.legs[3].elbow.x = this.spine[3].x + LEG_LENGTH + legCycle;
                 this.legs[3].elbow.y = this.spine[3].y + LEG_LENGTH - legCycle;
                 this.legs[3].foot.x = this.spine[3].x + LEG_LENGTH + FOREARM_LENGTH / 2 + legCycle;
                 this.legs[3].foot.y = this.spine[3].y + LEG_LENGTH + FOREARM_LENGTH;
 
-                // Update wings with wider, bat-like structure
                 const wingFlap = Math.sin(this.walkCycle) * 20 * SCALE_FACTOR * (1 + this.speed * 0.1);
                 for (let i = 0; i < WING_BONES; i++) {
                     const base = this.spine[1];
                     const angle = (i / (WING_BONES - 1)) * Math.PI / 2 - Math.PI / 4;
-                    const length = WING_SPAN * (1 - i / (WING_BONES - 1)); // Taper toward tips
+                    const length = WING_SPAN * (1 - i / (WING_BONES - 1));
                     this.wings[0].bones[i].x = lerp(this.wings[0].bones[i].x, base.x - length * Math.cos(angle) + wingFlap, 0.2);
                     this.wings[0].bones[i].y = lerp(this.wings[0].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, 0.2);
                     this.wings[1].bones[i].x = lerp(this.wings[1].bones[i].x, base.x + length * Math.cos(angle) - wingFlap, 0.2);
@@ -222,7 +324,6 @@
                     }
                 }
 
-                // Update particles (dust, breath, cracks)
                 if (this.speed > 1 || Math.random() < 0.1) {
                     this.particles.push({
                         x: this.mouseX + (Math.random() - 0.5) * HEAD_SIZE,
@@ -281,9 +382,8 @@
             draw() {
                 ctx.clearRect(0, 0, width, height);
                 ctx.shadowColor = GLOW_COLOR;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = this.effectsEnabled ? 10 : 0; // Adjusted for toggle
 
-                // Draw fog with mist parting
                 this.fogParticles.forEach(p => {
                     ctx.fillStyle = `rgba(173, 216, 230, ${p.opacity})`;
                     ctx.beginPath();
@@ -291,7 +391,6 @@
                     ctx.fill();
                 });
 
-                // Draw head (long, jagged skull with broken horn)
                 const headGradient = ctx.createLinearGradient(this.mouseX - HEAD_SIZE, this.mouseY - HEAD_SIZE, this.mouseX + HEAD_SIZE, this.mouseY + HEAD_SIZE);
                 headGradient.addColorStop(0, '#fff');
                 headGradient.addColorStop(1, BONE_COLOR);
@@ -348,36 +447,33 @@
                 ctx.lineTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 8 * SCALE_FACTOR);
                 ctx.stroke();
 
-                // Horns (one broken)
                 const hornScale = 1 + Math.sin(this.walkCycle) * 0.1;
                 ctx.beginPath();
                 ctx.moveTo(this.mouseX - 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE);
-                ctx.lineTo(this.mouseX - 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR * 0.5); // Broken horn
+                ctx.lineTo(this.mouseX - 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR * 0.5);
                 ctx.stroke();
                 ctx.beginPath();
                 ctx.moveTo(this.mouseX + 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE);
                 ctx.lineTo(this.mouseX + 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR);
                 ctx.stroke();
 
-                // Draw wings with wider, bat-like structure and sharp angles
                 this.wings.forEach((wing, index) => {
                     ctx.strokeStyle = BONE_COLOR;
                     ctx.lineWidth = 2 * SCALE_FACTOR;
                     ctx.beginPath();
                     ctx.moveTo(this.spine[1].x, this.spine[1].y);
                     for (let i = 0; i < WING_BONES; i++) {
-                        const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4; // More angular spread
-                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2; // Wider at base, tapering
+                        const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4;
+                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2;
                         const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
                         const y = this.spine[1].y - length * Math.sin(angleOffset);
                         ctx.lineTo(x, y);
                         if (i === WING_BONES - 1) {
-                            ctx.lineTo(x + (index === 0 ? -15 : 15) * SCALE_FACTOR, y + 10 * SCALE_FACTOR); // Sharper tip
+                            ctx.lineTo(x + (index === 0 ? -15 : 15) * SCALE_FACTOR, y + 10 * SCALE_FACTOR);
                         }
                     }
                     ctx.stroke();
 
-                    // Ghostly membrane with flame patterns
                     ctx.fillStyle = `${WING_MEMBRANE_COLOR.slice(0, -2)}${0.2 + Math.sin(this.walkCycle) * 0.1})`;
                     ctx.beginPath();
                     ctx.moveTo(this.spine[1].x, this.spine[1].y);
@@ -394,9 +490,8 @@
                     ctx.closePath();
                     ctx.fill();
 
-                    // Flame-like patterns on membrane
                     ctx.fillStyle = `${FLAME_PATTERN_COLOR.slice(0, -2)}${0.3 + Math.sin(this.walkCycle + index) * 0.1})`;
-                    for (let i = 0; i < 4; i++) { // More patterns for width
+                    for (let i = 0; i < 4; i++) {
                         ctx.beginPath();
                         const x = lerp(this.spine[1].x, wing.bones[Math.floor(WING_BONES / 2)].x, i / 4) + (index === 0 ? -10 : 10) * SCALE_FACTOR;
                         const y = lerp(this.spine[1].y, wing.bones[Math.floor(WING_BONES / 2)].y, i / 4) - 20 * SCALE_FACTOR;
@@ -406,7 +501,6 @@
                         ctx.fill();
                     }
 
-                    // Glowing cracks on wing bones
                     ctx.strokeStyle = CRACK_COLOR;
                     for (let i = 0; i < WING_BONES; i++) {
                         if (wing.bones[i].crack) {
@@ -422,7 +516,6 @@
                     }
                 });
 
-                // Draw spine with ghostflame and cracks
                 for (let i = 0; i < SPINE_SEGMENTS; i++) {
                     const s = this.spine[i];
                     const spineGradient = ctx.createLinearGradient(s.x - SPINE_SEGMENT_SIZE, s.y - SPINE_SEGMENT_SIZE, s.x + SPINE_SEGMENT_SIZE, s.y + SPINE_SEGMENT_SIZE);
@@ -468,7 +561,6 @@
                     }
                 }
 
-                // Draw legs (long and bony, crawling)
                 this.legs.forEach(leg => {
                     const legGradient = ctx.createLinearGradient(leg.base.x, leg.base.y, leg.foot.x, leg.foot.y);
                     legGradient.addColorStop(0, '#fff');
@@ -493,7 +585,6 @@
                     ctx.stroke();
                 });
 
-                // Draw tail (bone whip with shattered tip)
                 for (let i = 0; i < TAIL_SEGMENTS; i++) {
                     const t = this.tail[i];
                     const width = (TAIL_SEGMENTS - i) * 2 * SCALE_FACTOR;
@@ -526,7 +617,6 @@
                 ctx.arc(tip.x, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Draw particles
                 this.particles.forEach(p => {
                     ctx.fillStyle = this.breathTimer > 0 ? `${GHOSTFLAME_COLOR.slice(0, -2)}${p.opacity})` : `rgba(224, 216, 195, ${p.opacity})`;
                     ctx.beginPath();
@@ -541,7 +631,6 @@
                     ctx.fill();
                 });
 
-                // Draw soul core cursor
                 const soulGradient = ctx.createRadialGradient(this.targetX, this.targetY, 0, this.targetX, this.targetY, 10 * SCALE_FACTOR);
                 soulGradient.addColorStop(0, 'rgba(50, 205, 50, 1)');
                 soulGradient.addColorStop(1, 'rgba(173, 216, 230, 0)');
@@ -562,11 +651,11 @@
             }
 
             roar() {
-                this.roarTimer = 20;
+                if (this.effectsEnabled) this.roarTimer = 20;
             }
 
             breathe() {
-                this.breathTimer = 30;
+                if (this.effectsEnabled) this.breathTimer = 30;
             }
         }
 
@@ -606,6 +695,14 @@
 
         document.addEventListener('mouseleave', () => canvas.style.opacity = '0');
         document.addEventListener('mouseenter', () => canvas.style.opacity = '1');
+
+        // New: Toggle Effects Function
+        function toggleEffects() {
+            dragon.effectsEnabled = !dragon.effectsEnabled;
+            document.querySelector('.toggle-effects').textContent = 
+                dragon.effectsEnabled ? 'Toggle Effects Off' : 'Toggle Effects On';
+            canvas.style.filter = dragon.effectsEnabled ? 'none' : 'grayscale(80%)'; // Visual feedback
+        }
 
         animate();
     </script>
