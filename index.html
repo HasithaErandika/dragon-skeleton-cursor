@@ -3,54 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mythical Nightmare Skeletal Dragon with Wider Wings</title>
+    <title>Realistic Mythical Nightmare Dragon</title>
     <style>
-        /* Original Styles */
-        body {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
             height: 100vh;
-            background: #222;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
             overflow: hidden;
+            transition: background 1s ease;
             cursor: none;
         }
+
+        body.light-theme {
+            background: radial-gradient(circle at center, #e0e0e0 0%, #b0b0b0 100%);
+        }
+
         canvas {
             position: fixed;
             top: 0;
             left: 0;
             z-index: 9999;
+            transition: opacity 0.3s ease, filter 0.5s ease;
+            filter: drop-shadow(0 0 20px rgba(50, 205, 50, 0.3));
         }
 
-        /* New UI/UX Enhancements */
-        * {
-            box-sizing: border-box;
+        /* Vignette Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.7) 100%);
+            z-index: 9998;
         }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); /* Enhanced background */
-            transition: background 0.5s ease;
+        /* Loading Animation */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            opacity: 1;
+            transition: opacity 0.5s ease;
         }
 
-        canvas {
-            transition: opacity 0.3s ease, filter 0.5s ease; /* Smooth transitions */
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* Overlay for UI */
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #32cd32;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Overlay */
         .overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 10000; /* Above canvas */
+            z-index: 10000;
             pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
+            padding: 25px;
             color: #e0d8c3;
-            opacity: 0.9;
+            opacity: 0.95;
             transition: opacity 0.5s ease;
         }
 
@@ -59,72 +103,177 @@
         }
 
         .title {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(173, 216, 230, 0.5), 0 0 20px rgba(50, 205, 50, 0.3);
-            animation: glowPulse 3s infinite ease-in-out;
+            text-shadow: 0 0 15px rgba(173, 216, 230, 0.7), 0 0 30px rgba(50, 205, 50, 0.5);
+            animation: glowPulse 2.5s infinite ease-in-out;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.3s ease;
         }
 
+        .title:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 20px rgba(173, 216, 230, 0.9), 0 0 40px rgba(50, 205, 50, 0.7);
+        }
+
+        /* Controls Panel */
         .controls {
             font-size: 1rem;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(50, 205, 50, 0.4);
-            max-width: 350px;
+            background: linear-gradient(145deg, rgba(20, 20, 20, 0.9), rgba(10, 10, 10, 0.9));
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(50, 205, 50, 0.6), inset 0 0 10px rgba(50, 205, 50, 0.3);
+            max-width: 450px;
             align-self: flex-end;
-            animation: slideUp 1s ease-in-out;
+            animation: slideUp 1.2s ease-in-out;
             pointer-events: auto;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(50, 205, 50, 0.5);
+        }
+
+        .controls:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 35px rgba(50, 205, 50, 0.8), inset 0 0 15px rgba(50, 205, 50, 0.4);
         }
 
         .controls p {
-            margin: 5px 0;
+            margin: 10px 0;
+            line-height: 1.5;
         }
 
-        .toggle-effects {
-            background: rgba(50, 205, 50, 0.3);
+        .settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(50, 205, 50, 0.4);
+        }
+
+        .settings label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: 0.95rem;
+            text-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+        }
+
+        .settings input[type="range"] {
+            width: 100%;
+            accent-color: #32cd32;
+            cursor: pointer;
+            background: linear-gradient(to right, #32cd32, #1a8b1a);
+            border-radius: 5px;
+            height: 8px;
+        }
+
+        .settings input[type="color"] {
+            width: 50px;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+
+        .button {
+            background: linear-gradient(145deg, rgba(50, 205, 50, 0.4), rgba(30, 155, 30, 0.4));
             border: 1px solid #32cd32;
             color: #e0d8c3;
-            padding: 6px 12px;
-            border-radius: 5px;
+            padding: 10px 20px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+            margin: 8px 8px 0 0;
+            font-size: 0.95rem;
+            text-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
         }
 
-        .toggle-effects:hover {
-            background: rgba(50, 205, 50, 0.6);
+        .button:hover {
+            background: linear-gradient(145deg, rgba(50, 205, 50, 0.7), rgba(30, 155, 30, 0.7));
             transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(50, 205, 50, 0.6);
+        }
+
+        .button:focus {
+            outline: 2px solid #32cd32;
+            outline-offset: 2px;
+        }
+
+        /* HUD */
+        .hud {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #32cd32;
+            box-shadow: 0 0 10px rgba(50, 205, 50, 0.4);
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .hud.hidden {
+            opacity: 0;
         }
 
         /* Animations */
         @keyframes glowPulse {
-            0%, 100% { text-shadow: 0 0 10px rgba(173, 216, 230, 0.5); }
-            50% { text-shadow: 0 0 20px rgba(173, 216, 230, 0.8), 0 0 30px rgba(50, 205, 50, 0.5); }
+            0%, 100% { text-shadow: 0 0 15px rgba(173, 216, 230, 0.7); }
+            50% { text-shadow: 0 0 30px rgba(173, 216, 230, 1), 0 0 45px rgba(50, 205, 50, 0.7); }
         }
 
         @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 0.9; }
+            from { transform: translateY(60px); opacity: 0; }
+            to { transform: translateY(0); opacity: 0.95; }
         }
 
-        /* Responsive Adjustments */
+        /* Responsive Design */
         @media (max-width: 768px) {
+            .title { font-size: 2.2rem; }
+            .controls { font-size: 0.9rem; padding: 20px; max-width: 100%; }
+            .overlay { padding: 15px; }
+            .hud { font-size: 0.8rem; }
+        }
+
+        @media (max-width: 480px) {
             .title { font-size: 1.8rem; }
-            .controls { font-size: 0.9rem; padding: 10px 15px; max-width: 100%; }
+            .controls { font-size: 0.85rem; padding: 15px; }
+            .settings input[type="color"] { width: 40px; height: 25px; }
         }
     </style>
 </head>
 <body>
-    <canvas id="dragonCanvas"></canvas>
-    <!-- New UI Overlay -->
-    <div class="overlay">
-        <div class="title">Mythical Nightmare Dragon</div>
-        <div class="controls">
+    <canvas id="dragonCanvas" role="img" aria-label="Animated realistic skeletal dragon"></canvas>
+    <div class="loading">
+        <div class="spinner"></div>
+    </div>
+    <div class="overlay" role="region" aria-label="User interface controls">
+        <h1 class="title" tabindex="0" role="button" aria-label="Realistic Mythical Nightmare Dragon title">Realistic Nightmare Dragon</h1>
+        <div class="controls" role="menu">
             <p>Move cursor to guide the dragon</p>
             <p>Click to breathe ghostly flames</p>
             <p>Double-click to trigger a roar</p>
-            <button class="toggle-effects" onclick="toggleEffects()">Toggle Effects</button>
+            <p>Press 'F' to toggle flight mode</p>
+            <div class="settings">
+                <label for="scale">Dragon Scale: <span id="scaleValue">0.8</span></label>
+                <input type="range" id="scale" min="0.5" max="1.5" step="0.1" value="0.8" aria-valuemin="0.5" aria-valuemax="1.5" aria-valuenow="0.8">
+                <label for="speed">Movement Speed: <span id="speedValue">0.1</span></label>
+                <input type="range" id="speed" min="0.05" max="0.3" step="0.01" value="0.1" aria-valuemin="0.05" aria-valuemax="0.3" aria-valuenow="0.1">
+                <label for="flameIntensity">Flame Intensity: <span id="flameIntensityValue">1</span></label>
+                <input type="range" id="flameIntensity" min="0.5" max="2" step="0.1" value="1" aria-valuemin="0.5" aria-valuemax="2" aria-valuenow="1">
+                <label for="dragonColor">Dragon Color:</label>
+                <input type="color" id="dragonColor" value="#e0d8c3" aria-label="Select dragon color">
+            </div>
+            <button class="button toggle-effects" onclick="toggleEffects()" aria-label="Toggle visual effects">Toggle Effects</button>
+            <button class="button toggle-theme" onclick="toggleTheme()" aria-label="Toggle between dark and light theme">Toggle Theme</button>
+            <button class="button toggle-hud" onclick="toggleHud()" aria-label="Toggle heads-up display">Toggle HUD</button>
+            <button class="button toggle-flight" onclick="toggleFlightMode()" aria-label="Toggle flight mode">Toggle Flight Mode</button>
         </div>
+    </div>
+    <div class="hud" role="status" aria-live="polite">
+        <p>Speed: <span id="dragonSpeed">0</span> m/s</p>
+        <p>Energy: <span id="dragonEnergy">100</span>%</p>
+        <p>Flight Mode: <span id="flightMode">Off</span></p>
     </div>
 
     <script>
@@ -135,65 +284,104 @@
         canvas.width = width;
         canvas.height = height;
 
+        // Audio Context for Sound Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(frequency, type = 'sine', duration = 0.5) {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.currentTime);
+            oscillator.start();
+            audioCtx.destination;
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
         // Constants
-        const SCALE_FACTOR = 0.8;
+        let SCALE_FACTOR = 0.8;
         const HEAD_SIZE = 15 * SCALE_FACTOR;
         const JAW_LENGTH = 12 * SCALE_FACTOR;
         const HORN_LENGTH = 20 * SCALE_FACTOR;
         const GLOW_RADIUS = 4 * SCALE_FACTOR;
         const SPINE_SEGMENT_SIZE = 12 * SCALE_FACTOR;
-        const SPINE_SEGMENTS = 5;
+        const SPINE_SEGMENTS = 8;
         const TAIL_LENGTH = 15 * SCALE_FACTOR;
-        const TAIL_SEGMENTS = 5;
+        const TAIL_SEGMENTS = 6;
         const SEGMENT_GAP = 8 * SCALE_FACTOR;
         const LEG_LENGTH = 20 * SCALE_FACTOR;
         const FOREARM_LENGTH = 15 * SCALE_FACTOR;
-        const WING_SPAN = 120 * SCALE_FACTOR;
-        const WING_BONES = 6;
+        const WING_SPAN = 150 * SCALE_FACTOR;
+        const WING_BONES = 8;
 
         // Colors
-        const BONE_COLOR = '#e0d8c3';
-        const SHADOW_COLOR = 'rgba(0, 0, 0, 0.4)';
-        const GLOW_COLOR = 'rgba(173, 216, 230, 0.25)';
-        const GHOSTFLAME_COLOR = 'rgba(50, 205, 50, 0.5)';
-        const WING_MEMBRANE_COLOR = 'rgba(173, 216, 230, 0.2)';
-        const FLAME_PATTERN_COLOR = 'rgba(50, 205, 50, 0.3)';
-        const CRACK_COLOR = 'rgba(50, 205, 50, 0.6)';
+        let BONE_COLOR = '#e0d8c3';
+        const SHADOW_COLOR = 'rgba(0, 0, 0, 0.5)';
+        const GLOW_COLOR = 'rgba(173, 216, 230, 0.3)';
+        let GHOSTFLAME_COLOR = 'rgba(50, 205, 50, 0.6)';
+        const WING_MEMBRANE_COLOR = 'rgba(173, 216, 230, 0.25)';
+        const FLAME_PATTERN_COLOR = 'rgba(50, 205, 50, 0.4)';
+        const CRACK_COLOR = 'rgba(50, 205, 50, 0.7)';
 
         // Utility
         function lerp(start, end, t) {
             return start * (1 - t) + end * t;
         }
 
+        function hexToRgb(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return { r, g, b };
+        }
+
         class DragonSkeleton {
             constructor() {
-                this.mouseX = width / 2;
-                this.mouseY = height / 2;
-                this.targetX = this.mouseX;
-                this.targetY = this.mouseY;
-                this.walkCycle = 0;
-                this.roarTimer = 0;
-                this.breathTimer = 0;
-                this.speed = 0;
-                this.lastMouseX = this.mouseX;
-                this.lastMouseY = this.mouseY;
+            this.mouseX = width / 2;
+            this.mouseY = height / 2;
+            this.targetX = this.mouseX;
+            this.targetY = this.mouseY;
+            this.velocityX = 0;
+            this.velocityY = 0;
+            this.walkCycle = 0;
+            this.breathCycle = 0;
+            this.roarTimer = 0;
+            this.breathTimer = 0;
+            this.energy = 100;
+            this.speed = 0;
+            this.moveSpeed = 0.1;
+            this.flameIntensity = 1;
+            this.flightMode = false;
+            this.lastMouseX = this.mouseX;
+            this.lastMouseY = this.mouseY;
+            this.spine = [];
+            this.tail = [];
+            this.legs = [];
+            this.wings = [{ bones: [] }, { bones: [] }];
+            this.particles = [];
+            this.fogParticles = [];
+            this.crackParticles = [];
+            this.effectsEnabled = true;
+            this.hudVisible = true;
+            this.springConstant = 0.05;
+            this.damping = 0.9;
+            this.initSkeleton();
+            this.initFog();
+        }
+
+            initSkeleton() {
                 this.spine = [];
                 this.tail = [];
                 this.legs = [];
                 this.wings = [{ bones: [] }, { bones: [] }];
-                this.particles = [];
-                this.fogParticles = [];
-                this.crackParticles = [];
-                this.effectsEnabled = true; // New: Toggle for effects
-                this.initSkeleton();
-                this.initFog();
-            }
-
-            initSkeleton() {
                 for (let i = 0; i < SPINE_SEGMENTS; i++) {
                     this.spine.push({
                         x: this.mouseX,
                         y: this.mouseY + (i + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP),
+                        vx: 0,
+                        vy: 0,
                         crack: Math.random() < 0.5
                     });
                 }
@@ -201,6 +389,8 @@
                     this.tail.push({
                         x: this.mouseX,
                         y: this.mouseY + (SPINE_SEGMENTS + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP) + i * TAIL_LENGTH,
+                        vx: 0,
+                        vy: 0,
                         crack: Math.random() < 0.5
                     });
                 }
@@ -215,60 +405,78 @@
             }
 
             initFog() {
-                for (let i = 0; i < 50; i++) {
+                this.fogParticles = [];
+                for (let i = 0; i < 75; i++) {
                     this.fogParticles.push({
                         x: Math.random() * width,
-                        y: height - Math.random() * 100,
-                        size: Math.random() * 10 + 5,
-                        vx: (Math.random() - 0.5) * 0.2,
-                        opacity: Math.random() * 0.3
+                        y: height - Math.random() * 150,
+                        size: Math.random() * 15 + 8,
+                        vx: (Math.random() - 0.5) * 0.3,
+                        opacity: Math.random() * 0.4
                     });
                 }
             }
 
             update() {
-                const dx = this.targetX - this.lastMouseX;
-                const dy = this.targetY - this.lastMouseY;
+                const dx = this.targetX - this.mouseX;
+                const dy = this.targetY - this.mouseY;
                 this.speed = Math.sqrt(dx * dx + dy * dy) * 0.1;
-                this.lastMouseX = this.targetX;
-                this.lastMouseY = this.targetY;
+                this.energy = Math.max(0, this.energy - (this.flightMode ? 0.2 : 0.1) * (this.speed / 10));
+                document.getElementById('dragonSpeed').textContent = this.speed.toFixed(1);
+                document.getElementById('dragonEnergy').textContent = Math.round(this.energy);
 
-                this.mouseX = lerp(this.mouseX, this.targetX, 0.1);
-                this.mouseY = lerp(this.mouseY, this.targetY + 50 * SCALE_FACTOR, 0.1);
+                // Spring-based movement for head
+                const ax = this.springConstant * (this.targetX - this.mouseX) - this.damping * this.velocityX;
+                const ay = this.springConstant * (this.targetY + 50 * SCALE_FACTOR - this.mouseY) - this.damping * this.velocityY;
+                this.velocityX += ax;
+                this.velocityY += ay;
+                this.mouseX += this.velocityX;
+                this.mouseY += this.velocityY;
 
+                // Update spine with spring dynamics
                 for (let i = 0; i < SPINE_SEGMENTS; i++) {
                     const target = i === 0 ? {x: this.mouseX, y: this.mouseY} : this.spine[i - 1];
-                    this.spine[i].x = lerp(this.spine[i].x, target.x, 0.2);
-                    this.spine[i].y = lerp(this.spine[i].y, target.y + (i + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP), 0.2);
-                    if (this.spine[i].crack && Math.random() < 0.05) {
+                    const dx = target.x - this.spine[i].x;
+                    const dy = target.y + (i + 1) * (SPINE_SEGMENT_SIZE + SEGMENT_GAP) - this.spine[i].y;
+                    this.spine[i].vx += this.springConstant * dx - this.damping * this.spine[i].vx;
+                    this.spine[i].vy += this.springConstant * dy - this.damping * this.spine[i].vy;
+                    this.spine[i].x += this.spine[i].vx;
+                    this.spine[i].y += this.spine[i].vy;
+                    if (this.spine[i].crack && Math.random() < 0.07) {
                         this.crackParticles.push({
-                            x: this.spine[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            y: this.spine[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            opacity: 0.8,
-                            size: Math.random() * 2 * SCALE_FACTOR,
-                            vx: (Math.random() - 0.5) * 0.5,
-                            vy: -(Math.random() * 0.5)
+                            x: this.spine[i].x + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            y: this.spine[i].y + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            opacity: 0.9,
+                            size: Math.random() * 3 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.7,
+                            vy: -(Math.random() * 0.7)
                         });
                     }
                 }
 
+                // Update tail
                 for (let i = 0; i < TAIL_SEGMENTS; i++) {
                     const target = i === 0 ? this.spine[SPINE_SEGMENTS - 1] : this.tail[i - 1];
-                    this.tail[i].x = lerp(this.tail[i].x, target.x + Math.sin(this.walkCycle + i) * 2 * SCALE_FACTOR, 0.15);
-                    this.tail[i].y = lerp(this.tail[i].y, target.y + (i + 1) * TAIL_LENGTH, 0.15);
-                    if (this.tail[i].crack && Math.random() < 0.05) {
+                    const dx = target.x + Math.sin(this.walkCycle + i) * 3 * SCALE_FACTOR - this.tail[i].x;
+                    const dy = target.y + (i + 1) * TAIL_LENGTH - this.tail[i].y;
+                    this.tail[i].vx += this.springConstant * dx - this.damping * this.tail[i].vx;
+                    this.tail[i].vy += this.springConstant * dy - this.damping * this.tail[i].vy;
+                    this.tail[i].x += this.tail[i].vx;
+                    this.tail[i].y += this.tail[i].vy;
+                    if (this.tail[i].crack && Math.random() < 0.07) {
                         this.crackParticles.push({
-                            x: this.tail[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            y: this.tail[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            opacity: 0.8,
-                            size: Math.random() * 2 * SCALE_FACTOR,
-                            vx: (Math.random() - 0.5) * 0.5,
-                            vy: -(Math.random() * 0.5)
+                            x: this.tail[i].x + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            y: this.tail[i].y + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            opacity: 0.9,
+                            size: Math.random() * 3 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.7,
+                            vy: -(Math.random() * 0.7)
                         });
                     }
                 }
 
-                const legCycle = Math.sin(this.walkCycle) * 5 * SCALE_FACTOR;
+                // Update legs
+                const legCycle = Math.sin(this.walkCycle) * 6 * SCALE_FACTOR * (this.flightMode ? 0.2 : 1);
                 this.legs[0].base = this.spine[0];
                 this.legs[0].elbow.x = this.spine[0].x - LEG_LENGTH + legCycle;
                 this.legs[0].elbow.y = this.spine[0].y + LEG_LENGTH - legCycle;
@@ -293,56 +501,58 @@
                 this.legs[3].foot.x = this.spine[3].x + LEG_LENGTH + FOREARM_LENGTH / 2 + legCycle;
                 this.legs[3].foot.y = this.spine[3].y + LEG_LENGTH + FOREARM_LENGTH;
 
-                const wingFlap = Math.sin(this.walkCycle) * 20 * SCALE_FACTOR * (1 + this.speed * 0.1);
+                // Update wings with dynamic flapping
+                const wingFlap = Math.sin(this.walkCycle * (this.flightMode ? 2 : 1)) * 25 * SCALE_FACTOR * (1 + this.speed * 0.15);
                 for (let i = 0; i < WING_BONES; i++) {
                     const base = this.spine[1];
                     const angle = (i / (WING_BONES - 1)) * Math.PI / 2 - Math.PI / 4;
-                    const length = WING_SPAN * (1 - i / (WING_BONES - 1));
-                    this.wings[0].bones[i].x = lerp(this.wings[0].bones[i].x, base.x - length * Math.cos(angle) + wingFlap, 0.2);
-                    this.wings[0].bones[i].y = lerp(this.wings[0].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, 0.2);
-                    this.wings[1].bones[i].x = lerp(this.wings[1].bones[i].x, base.x + length * Math.cos(angle) - wingFlap, 0.2);
-                    this.wings[1].bones[i].y = lerp(this.wings[1].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, 0.2);
-                    if (this.wings[0].bones[i].crack && Math.random() < 0.05) {
+                    const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * (this.flightMode ? 1.2 : 1);
+                    this.wings[0].bones[i].x = lerp(this.wings[0].bones[i].x, base.x - length * Math.cos(angle) + wingFlap, this.flightMode ? 0.3 : 0.2);
+                    this.wings[0].bones[i].y = lerp(this.wings[0].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, this.flightMode ? 0.3 : 0.2);
+                    this.wings[1].bones[i].x = lerp(this.wings[1].bones[i].x, base.x + length * Math.cos(angle) - wingFlap, this.flightMode ? 0.3 : 0.2);
+                    this.wings[1].bones[i].y = lerp(this.wings[1].bones[i].y, base.y - length * Math.sin(angle) - wingFlap, this.flightMode ? 0.3 : 0.2);
+                    if (this.wings[0].bones[i].crack && Math.random() < 0.07) {
                         this.crackParticles.push({
-                            x: this.wings[0].bones[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            y: this.wings[0].bones[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            opacity: 0.8,
-                            size: Math.random() * 2 * SCALE_FACTOR,
-                            vx: (Math.random() - 0.5) * 0.5,
-                            vy: -(Math.random() * 0.5)
+                            x: this.wings[0].bones[i].x + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            y: this.wings[0].bones[i].y + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            opacity: 0.9,
+                            size: Math.random() * 3 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.7,
+                            vy: -(Math.random() * 0.7)
                         });
                     }
-                    if (this.wings[1].bones[i].crack && Math.random() < 0.05) {
+                    if (this.wings[1].bones[i].crack && Math.random() < 0.07) {
                         this.crackParticles.push({
-                            x: this.wings[1].bones[i].x + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            y: this.wings[1].bones[i].y + (Math.random() - 0.5) * 10 * SCALE_FACTOR,
-                            opacity: 0.8,
-                            size: Math.random() * 2 * SCALE_FACTOR,
-                            vx: (Math.random() - 0.5) * 0.5,
-                            vy: -(Math.random() * 0.5)
+                            x: this.wings[1].bones[i].x + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            y: this.wings[1].bones[i].y + (Math.random() - 0.5) * 12 * SCALE_FACTOR,
+                            opacity: 0.9,
+                            size: Math.random() * 3 * SCALE_FACTOR,
+                            vx: (Math.random() - 0.5) * 0.7,
+                            vy: -(Math.random() * 0.7)
                         });
                     }
                 }
 
-                if (this.speed > 1 || Math.random() < 0.1) {
+                // Particle effects
+                if (this.speed > 2 || Math.random() < 0.15) {
                     this.particles.push({
                         x: this.mouseX + (Math.random() - 0.5) * HEAD_SIZE,
                         y: this.mouseY + (Math.random() - 0.5) * HEAD_SIZE,
-                        opacity: 0.6,
-                        size: Math.random() * 2 * SCALE_FACTOR,
-                        vx: (Math.random() - 0.5) * 0.5,
-                        vy: -(Math.random() * 0.5)
+                        opacity: 0.7,
+                        size: Math.random() * 3 * SCALE_FACTOR,
+                        vx: (Math.random() - 0.5) * 0.8,
+                        vy: -(Math.random() * 0.8)
                     });
                 }
                 if (this.breathTimer > 0) {
-                    for (let i = 0; i < 3; i++) {
+                    for (let i = 0; i < 5; i++) {
                         this.particles.push({
                             x: this.mouseX + (Math.random() - 0.5) * HEAD_SIZE,
                             y: this.mouseY + HEAD_SIZE,
                             opacity: 1,
-                            size: Math.random() * 4 * SCALE_FACTOR,
-                            vx: (Math.random() - 0.5) * 2,
-                            vy: Math.random() * 5 + 2
+                            size: (Math.random() * 5 + 2) * SCALE_FACTOR * this.flameIntensity,
+                            vx: (Math.random() - 0.5) * 3,
+                            vy: Math.random() * 6 + 3
                         });
                     }
                     this.breathTimer--;
@@ -351,39 +561,44 @@
                 this.particles.forEach(p => {
                     p.x += p.vx;
                     p.y += p.vy;
-                    p.opacity -= 0.02;
+                    p.opacity -= 0.015;
+                    p.size *= 0.98;
                 });
 
                 this.crackParticles = this.crackParticles.filter(p => p.opacity > 0);
                 this.crackParticles.forEach(p => {
                     p.x += p.vx;
                     p.y += p.vy;
-                    p.opacity -= 0.02;
+                    p.opacity -= 0.015;
+                    p.size *= 0.99;
                 });
 
+                // Dynamic fog
                 this.fogParticles.forEach(p => {
                     const distToDragon = Math.sqrt((p.x - this.mouseX) ** 2 + (p.y - (this.mouseY + 50 * SCALE_FACTOR)) ** 2);
-                    const pushForce = Math.max(0, 50 - distToDragon) * 0.01;
+                    const pushForce = Math.max(0, 75 - distToDragon) * 0.02;
                     p.x += p.vx + (this.mouseX - p.x) * pushForce;
                     p.y += (this.mouseY + 50 * SCALE_FACTOR - p.y) * pushForce;
                     if (p.x < 0 || p.x > width) p.vx *= -1;
-                    p.opacity = Math.max(0.1, Math.min(0.3, p.opacity + (Math.random() - 0.5) * 0.01));
+                    p.opacity = Math.max(0.15, Math.min(0.4, p.opacity + (Math.random() - 0.5) * 0.02));
                 });
 
                 if (this.roarTimer > 0) {
                     this.roarTimer--;
-                    this.mouseX += (Math.random() - 0.5) * 5;
-                    this.mouseY += (Math.random() - 0.5) * 5;
+                    this.mouseX += (Math.random() - 0.5) * 8;
+                    this.mouseY += (Math.random() - 0.5) * 8;
                 }
 
-                this.walkCycle += 0.1 + this.speed * 0.02;
+                this.walkCycle += (this.flightMode ? 0.2 : 0.1) + this.speed * 0.03;
+                this.breathCycle += 0.05;
             }
 
             draw() {
                 ctx.clearRect(0, 0, width, height);
                 ctx.shadowColor = GLOW_COLOR;
-                ctx.shadowBlur = this.effectsEnabled ? 10 : 0; // Adjusted for toggle
+                ctx.shadowBlur = this.effectsEnabled ? 15 : 0;
 
+                // Draw fog
                 this.fogParticles.forEach(p => {
                     ctx.fillStyle = `rgba(173, 216, 230, ${p.opacity})`;
                     ctx.beginPath();
@@ -391,113 +606,116 @@
                     ctx.fill();
                 });
 
+                // Draw head with breathing animation
+                const breathOffset = Math.sin(this.breathCycle) * 2 * SCALE_FACTOR;
                 const headGradient = ctx.createLinearGradient(this.mouseX - HEAD_SIZE, this.mouseY - HEAD_SIZE, this.mouseX + HEAD_SIZE, this.mouseY + HEAD_SIZE);
                 headGradient.addColorStop(0, '#fff');
                 headGradient.addColorStop(1, BONE_COLOR);
                 ctx.fillStyle = headGradient;
                 ctx.beginPath();
-                ctx.arc(this.mouseX, this.mouseY, HEAD_SIZE, 0, Math.PI * 2);
+                ctx.arc(this.mouseX, this.mouseY + breathOffset, HEAD_SIZE, 0, Math.PI * 2);
                 ctx.fill();
 
-                const eyeGlow = this.speed > 5 ? `rgba(50, 205, 50, ${0.7 + Math.sin(this.walkCycle) * 0.3})` : `rgba(173, 216, 230, ${0.7 + Math.sin(this.walkCycle) * 0.3})`;
+                const eyeGlow = this.speed > 5 ? `rgba(50, 205, 50, ${0.8 + Math.sin(this.walkCycle) * 0.4})` : `rgba(173, 216, 230, ${0.8 + Math.sin(this.walkCycle) * 0.4})`;
                 ctx.fillStyle = eyeGlow;
                 ctx.beginPath();
-                ctx.arc(this.mouseX - 6 * SCALE_FACTOR, this.mouseY - 4 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.arc(this.mouseX - 6 * SCALE_FACTOR, this.mouseY - 4 * SCALE_FACTOR + breathOffset, 3 * SCALE_FACTOR, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.beginPath();
-                ctx.arc(this.mouseX + 6 * SCALE_FACTOR, this.mouseY - 4 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.arc(this.mouseX + 6 * SCALE_FACTOR, this.mouseY - 4 * SCALE_FACTOR + breathOffset, 3 * SCALE_FACTOR, 0, Math.PI * 2);
                 ctx.fill();
 
                 ctx.fillStyle = SHADOW_COLOR;
                 ctx.beginPath();
-                ctx.moveTo(this.mouseX - 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX, this.mouseY + 9 * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX - 5 * SCALE_FACTOR, this.mouseY + 5 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX + 5 * SCALE_FACTOR, this.mouseY + 5 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX, this.mouseY + 10 * SCALE_FACTOR + breathOffset);
                 ctx.fill();
 
                 ctx.strokeStyle = BONE_COLOR;
                 ctx.lineWidth = 2 * SCALE_FACTOR;
                 ctx.beginPath();
-                ctx.moveTo(this.mouseX - HEAD_SIZE, this.mouseY);
-                ctx.lineTo(this.mouseX - HEAD_SIZE - JAW_LENGTH, this.mouseY + 8 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX - HEAD_SIZE, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX - HEAD_SIZE, this.mouseY + breathOffset);
+                ctx.lineTo(this.mouseX - HEAD_SIZE - JAW_LENGTH, this.mouseY + 8 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX - HEAD_SIZE, this.mouseY + 4 * SCALE_FACTOR + breathOffset);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.moveTo(this.mouseX + HEAD_SIZE, this.mouseY);
-                ctx.lineTo(this.mouseX + HEAD_SIZE + JAW_LENGTH, this.mouseY + 8 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX + HEAD_SIZE, this.mouseY + 4 * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX + HEAD_SIZE, this.mouseY + breathOffset);
+                ctx.lineTo(this.mouseX + HEAD_SIZE + JAW_LENGTH, this.mouseY + 8 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX + HEAD_SIZE, this.mouseY + 4 * SCALE_FACTOR + breathOffset);
                 ctx.stroke();
 
-                const jawOffset = Math.sin(this.walkCycle) * 1.5 * SCALE_FACTOR * (this.roarTimer > 0 ? 2 : this.breathTimer > 0 ? 3 : 1);
+                const jawOffset = Math.sin(this.walkCycle) * 2 * SCALE_FACTOR * (this.roarTimer > 0 ? 2.5 : this.breathTimer > 0 ? 3.5 : 1);
                 ctx.beginPath();
-                ctx.moveTo(this.mouseX - HEAD_SIZE + 2 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX - HEAD_SIZE - JAW_LENGTH + 4 * SCALE_FACTOR, this.mouseY + 12 * SCALE_FACTOR + jawOffset);
+                ctx.moveTo(this.mouseX - HEAD_SIZE + 2 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX - HEAD_SIZE - JAW_LENGTH + 4 * SCALE_FACTOR, this.mouseY + 12 * SCALE_FACTOR + jawOffset + breathOffset);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.moveTo(this.mouseX + HEAD_SIZE - 2 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX + HEAD_SIZE + JAW_LENGTH - 4 * SCALE_FACTOR, this.mouseY + 12 * SCALE_FACTOR + jawOffset);
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(this.mouseX - 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX - 4 * SCALE_FACTOR, this.mouseY + 9 * SCALE_FACTOR);
-                ctx.moveTo(this.mouseX, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX, this.mouseY + 10 * SCALE_FACTOR);
-                ctx.moveTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR);
-                ctx.lineTo(this.mouseX + 4 * SCALE_FACTOR, this.mouseY + 8 * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX + HEAD_SIZE - 2 * SCALE_FACTOR, this.mouseY + 4 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX + HEAD_SIZE + JAW_LENGTH - 4 * SCALE_FACTOR, this.mouseY + 12 * SCALE_FACTOR + jawOffset + breathOffset);
                 ctx.stroke();
 
-                const hornScale = 1 + Math.sin(this.walkCycle) * 0.1;
                 ctx.beginPath();
-                ctx.moveTo(this.mouseX - 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE);
-                ctx.lineTo(this.mouseX - 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR * 0.5);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(this.mouseX + 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE);
-                ctx.lineTo(this.mouseX + 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR);
+                ctx.moveTo(this.mouseX - 5 * SCALE_FACTOR, this.mouseY + 5 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX - 5 * SCALE_FACTOR, this.mouseY + 10 * SCALE_FACTOR + breathOffset);
+                ctx.moveTo(this.mouseX, this.mouseY + 5 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX, this.mouseY + 11 * SCALE_FACTOR + breathOffset);
+                ctx.moveTo(this.mouseX + 5 * SCALE_FACTOR, this.mouseY + 5 * SCALE_FACTOR + breathOffset);
+                ctx.lineTo(this.mouseX + 5 * SCALE_FACTOR, this.mouseY + 9 * SCALE_FACTOR + breathOffset);
                 ctx.stroke();
 
+                const hornScale = 1 + Math.sin(this.walkCycle) * 0.15;
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX - 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE + breathOffset);
+                ctx.lineTo(this.mouseX - 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR * 0.5 + breathOffset);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(this.mouseX + 8 * SCALE_FACTOR, this.mouseY - HEAD_SIZE + breathOffset);
+                ctx.lineTo(this.mouseX + 12 * SCALE_FACTOR, this.mouseY - HEAD_SIZE - HORN_LENGTH * hornScale * SCALE_FACTOR + breathOffset);
+                ctx.stroke();
+
+                // Draw wings
                 this.wings.forEach((wing, index) => {
                     ctx.strokeStyle = BONE_COLOR;
-                    ctx.lineWidth = 2 * SCALE_FACTOR;
+                    ctx.lineWidth = 2.5 * SCALE_FACTOR;
                     ctx.beginPath();
                     ctx.moveTo(this.spine[1].x, this.spine[1].y);
                     for (let i = 0; i < WING_BONES; i++) {
                         const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4;
-                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2;
+                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * (this.flightMode ? 1.2 : 1);
                         const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
                         const y = this.spine[1].y - length * Math.sin(angleOffset);
                         ctx.lineTo(x, y);
                         if (i === WING_BONES - 1) {
-                            ctx.lineTo(x + (index === 0 ? -15 : 15) * SCALE_FACTOR, y + 10 * SCALE_FACTOR);
+                            ctx.lineTo(x + (index === 0 ? -20 : 20) * SCALE_FACTOR, y + 12 * SCALE_FACTOR);
                         }
                     }
                     ctx.stroke();
 
-                    ctx.fillStyle = `${WING_MEMBRANE_COLOR.slice(0, -2)}${0.2 + Math.sin(this.walkCycle) * 0.1})`;
+                    ctx.fillStyle = `${WING_MEMBRANE_COLOR.slice(0, -2)}${0.25 + Math.sin(this.walkCycle) * 0.15})`;
                     ctx.beginPath();
                     ctx.moveTo(this.spine[1].x, this.spine[1].y);
                     for (let i = 0; i < WING_BONES; i++) {
                         const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4;
-                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2;
+                        const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * (this.flightMode ? 1.2 : 1);
                         const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
                         const y = this.spine[1].y - length * Math.sin(angleOffset);
                         ctx.lineTo(x, y);
                         if (i === WING_BONES - 1) {
-                            ctx.lineTo(x + (index === 0 ? -15 : 15) * SCALE_FACTOR, y + 10 * SCALE_FACTOR);
+                            ctx.lineTo(x + (index === 0 ? -20 : 20) * SCALE_FACTOR, y + 12 * SCALE_FACTOR);
                         }
                     }
                     ctx.closePath();
                     ctx.fill();
 
-                    ctx.fillStyle = `${FLAME_PATTERN_COLOR.slice(0, -2)}${0.3 + Math.sin(this.walkCycle + index) * 0.1})`;
-                    for (let i = 0; i < 4; i++) {
+                    ctx.fillStyle = `${FLAME_PATTERN_COLOR.slice(0, -2)}${0.4 + Math.sin(this.walkCycle + index) * 0.15})`;
+                    for (let i = 0; i < 5; i++) {
                         ctx.beginPath();
-                        const x = lerp(this.spine[1].x, wing.bones[Math.floor(WING_BONES / 2)].x, i / 4) + (index === 0 ? -10 : 10) * SCALE_FACTOR;
-                        const y = lerp(this.spine[1].y, wing.bones[Math.floor(WING_BONES / 2)].y, i / 4) - 20 * SCALE_FACTOR;
+                        const x = lerp(this.spine[1].x, wing.bones[Math.floor(WING_BONES / 2)].x, i / 5) + (index === 0 ? -12 : 12) * SCALE_FACTOR;
+                        const y = lerp(this.spine[1].y, wing.bones[Math.floor(WING_BONES / 2)].y, i / 5) - 25 * SCALE_FACTOR;
                         ctx.moveTo(x, y);
-                        ctx.lineTo(x + (index === 0 ? -10 : 10) * SCALE_FACTOR, y + 20 * SCALE_FACTOR);
-                        ctx.lineTo(x, y + 30 * SCALE_FACTOR);
+                        ctx.lineTo(x + (index === 0 ? -12 : 12) * SCALE_FACTOR, y + 25 * SCALE_FACTOR);
+                        ctx.lineTo(x, y + 35 * SCALE_FACTOR);
                         ctx.fill();
                     }
 
@@ -505,23 +723,24 @@
                     for (let i = 0; i < WING_BONES; i++) {
                         if (wing.bones[i].crack) {
                             const angleOffset = i * (Math.PI / (WING_BONES - 1)) - Math.PI / 4;
-                            const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * 1.2;
+                            const length = WING_SPAN * (1 - i / (WING_BONES - 1)) * (this.flightMode ? 1.2 : 1);
                             const x = this.spine[1].x + (index === 0 ? -length : length) * Math.cos(angleOffset);
                             const y = this.spine[1].y - length * Math.sin(angleOffset);
                             ctx.beginPath();
-                            ctx.moveTo(x - 5 * SCALE_FACTOR, y);
-                            ctx.lineTo(x + 5 * SCALE_FACTOR, y + 5 * SCALE_FACTOR);
+                            ctx.moveTo(x - 6 * SCALE_FACTOR, y);
+                            ctx.lineTo(x + 6 * SCALE_FACTOR, y + 6 * SCALE_FACTOR);
                             ctx.stroke();
                         }
                     }
                 });
 
+                // Draw spine
                 for (let i = 0; i < SPINE_SEGMENTS; i++) {
                     const s = this.spine[i];
                     const spineGradient = ctx.createLinearGradient(s.x - SPINE_SEGMENT_SIZE, s.y - SPINE_SEGMENT_SIZE, s.x + SPINE_SEGMENT_SIZE, s.y + SPINE_SEGMENT_SIZE);
                     spineGradient.addColorStop(0, '#fff');
                     spineGradient.addColorStop(1, BONE_COLOR);
-                    ctx.fillStyle = spineGradient;
+                    ctx.fillStyle =地上Gradient;
                     ctx.beginPath();
                     ctx.arc(s.x, s.y, SPINE_SEGMENT_SIZE / 2, 0, Math.PI * 2);
                     ctx.fill();
@@ -529,38 +748,39 @@
                     ctx.strokeStyle = BONE_COLOR;
                     ctx.beginPath();
                     ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y);
-                    ctx.lineTo(s.x - SPINE_SEGMENT_SIZE * 1.2, s.y + Math.sin(this.walkCycle + i) * 4 * SCALE_FACTOR);
+                    ctx.lineTo(s.x - SPINE_SEGMENT_SIZE * 1.3, s.y + Math.sin(this.walkCycle + i) * 5 * SCALE_FACTOR);
                     ctx.stroke();
                     ctx.beginPath();
                     ctx.moveTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y);
-                    ctx.lineTo(s.x + SPINE_SEGMENT_SIZE * 1.2, s.y + Math.sin(this.walkCycle + i) * 4 * SCALE_FACTOR);
+                    ctx.lineTo(s.x + SPINE_SEGMENT_SIZE * 1.3, s.y + Math.sin(this.walkCycle + i) * 5 * SCALE_FACTOR);
                     ctx.stroke();
 
                     if (s.crack) {
                         ctx.strokeStyle = CRACK_COLOR;
                         ctx.beginPath();
                         ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y);
-                        ctx.lineTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y + 5 * SCALE_FACTOR);
+                        ctx.lineTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y + 6 * SCALE_FACTOR);
                         ctx.stroke();
                     }
 
-                    if (i < 3) {
+                    if (i < 4) {
                         ctx.beginPath();
-                        ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y + 2 * SCALE_FACTOR);
-                        ctx.lineTo(s.x - SPINE_SEGMENT_SIZE * 1.5, s.y + 10 * SCALE_FACTOR);
+                        ctx.moveTo(s.x - SPINE_SEGMENT_SIZE / 2, s.y + 3 * SCALE_FACTOR);
+                        ctx.lineTo(s.x - SPINE_SEGMENT_SIZE * 1.6, s.y + 12 * SCALE_FACTOR);
                         ctx.stroke();
                         ctx.beginPath();
-                        ctx.moveTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y + 2 * SCALE_FACTOR);
-                        ctx.lineTo(s.x + SPINE_SEGMENT_SIZE * 1.5, s.y + 10 * SCALE_FACTOR);
+                        ctx.moveTo(s.x + SPINE_SEGMENT_SIZE / 2, s.y + 3 * SCALE_FACTOR);
+                        ctx.lineTo(s.x + SPINE_SEGMENT_SIZE * 1.6, s.y + 12 * SCALE_FACTOR);
                         ctx.stroke();
 
-                        ctx.fillStyle = `${GHOSTFLAME_COLOR.slice(0, -2)}${0.5 + Math.sin(this.walkCycle + i) * 0.3})`;
+                        ctx.fillStyle = `${GHOSTFLAME_COLOR.slice(0, -2)}${0.6 + Math.sin(this.walkCycle + i) * 0.4})`;
                         ctx.beginPath();
-                        ctx.arc(s.x, s.y + 5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 0, Math.PI * 2);
+                        ctx.arc(s.x, s.y + 6 * SCALE_FACTOR, 6 * SCALE_FACTOR, 0, Math.PI * 2);
                         ctx.fill();
                     }
                 }
 
+                // Draw legs
                 this.legs.forEach(leg => {
                     const legGradient = ctx.createLinearGradient(leg.base.x, leg.base.y, leg.foot.x, leg.foot.y);
                     legGradient.addColorStop(0, '#fff');
@@ -574,20 +794,21 @@
                     ctx.moveTo(leg.elbow.x, leg.elbow.y);
                     ctx.lineTo(leg.foot.x, leg.foot.y);
                     ctx.stroke();
-                    ctx.lineWidth = 3 * SCALE_FACTOR;
+                    ctx.lineWidth = 3.5 * SCALE_FACTOR;
                     ctx.beginPath();
                     ctx.moveTo(leg.foot.x, leg.foot.y);
-                    ctx.lineTo(leg.foot.x - 5 * SCALE_FACTOR, leg.foot.y + 8 * SCALE_FACTOR);
+                    ctx.lineTo(leg.foot.x - 6 * SCALE_FACTOR, leg.foot.y + 10 * SCALE_FACTOR);
                     ctx.stroke();
                     ctx.beginPath();
                     ctx.moveTo(leg.foot.x, leg.foot.y);
-                    ctx.lineTo(leg.foot.x + 5 * SCALE_FACTOR, leg.foot.y + 8 * SCALE_FACTOR);
+                    ctx.lineTo(leg.foot.x + 6 * SCALE_FACTOR, leg.foot.y + 10 * SCALE_FACTOR);
                     ctx.stroke();
                 });
 
+                // Draw tail
                 for (let i = 0; i < TAIL_SEGMENTS; i++) {
                     const t = this.tail[i];
-                    const width = (TAIL_SEGMENTS - i) * 2 * SCALE_FACTOR;
+                    const width = (TAIL_SEGMENTS - i) * 2.5 * SCALE_FACTOR;
                     const tailGradient = ctx.createLinearGradient(t.x - width / 2, t.y, t.x + width / 2, t.y + TAIL_LENGTH);
                     tailGradient.addColorStop(0, '#fff');
                     tailGradient.addColorStop(1, BONE_COLOR);
@@ -609,14 +830,15 @@
                 ctx.strokeStyle = BONE_COLOR;
                 ctx.beginPath();
                 ctx.moveTo(tip.x, tip.y + TAIL_LENGTH);
-                ctx.lineTo(tip.x + 5 * SCALE_FACTOR, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR);
-                ctx.lineTo(tip.x - 5 * SCALE_FACTOR, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR);
+                ctx.lineTo(tip.x + 6 * SCALE_FACTOR, tip.y + TAIL_LENGTH + 12 * SCALE_FACTOR);
+                ctx.lineTo(tip.x - 6 * SCALE_FACTOR, tip.y + TAIL_LENGTH + 12 * SCALE_FACTOR);
                 ctx.stroke();
                 ctx.fillStyle = GHOSTFLAME_COLOR;
                 ctx.beginPath();
-                ctx.arc(tip.x, tip.y + TAIL_LENGTH + 10 * SCALE_FACTOR, 3 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.arc(tip.x, tip.y + TAIL_LENGTH + 12 * SCALE_FACTOR, 4 * SCALE_FACTOR, 0, Math.PI * 2);
                 ctx.fill();
 
+                // Draw particles
                 this.particles.forEach(p => {
                     ctx.fillStyle = this.breathTimer > 0 ? `${GHOSTFLAME_COLOR.slice(0, -2)}${p.opacity})` : `rgba(224, 216, 195, ${p.opacity})`;
                     ctx.beginPath();
@@ -631,12 +853,13 @@
                     ctx.fill();
                 });
 
-                const soulGradient = ctx.createRadialGradient(this.targetX, this.targetY, 0, this.targetX, this.targetY, 10 * SCALE_FACTOR);
+                // Draw soul
+                const soulGradient = ctx.createRadialGradient(this.targetX, this.targetY, 0, this.targetX, this.targetY, 12 * SCALE_FACTOR);
                 soulGradient.addColorStop(0, 'rgba(50, 205, 50, 1)');
                 soulGradient.addColorStop(1, 'rgba(173, 216, 230, 0)');
                 ctx.fillStyle = soulGradient;
                 ctx.beginPath();
-                ctx.arc(this.targetX, this.targetY, 10 * SCALE_FACTOR, 0, Math.PI * 2);
+                ctx.arc(this.targetX, this.targetY, 12 * SCALE_FACTOR, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -645,17 +868,54 @@
                 this.mouseY = height / 2;
                 this.targetX = this.mouseX;
                 this.targetY = this.mouseY;
+                this.velocityX = 0;
+                this.velocityY = 0;
                 this.initSkeleton();
                 this.fogParticles = [];
                 this.initFog();
             }
 
             roar() {
-                if (this.effectsEnabled) this.roarTimer = 20;
+                if (this.effectsEnabled && this.energy > 10) {
+                    this.roarTimer = 25;
+                    this.energy -= 10;
+                    playSound(100, 'sine', 0.8);
+                }
             }
 
             breathe() {
-                if (this.effectsEnabled) this.breathTimer = 30;
+                if (this.effectsEnabled && this.energy > 5) {
+                    this.breathTimer = 35;
+                    this.energy -= 5;
+                    playSound(200, 'triangle', 0.5);
+                }
+            }
+
+            updateScale(newScale) {
+                SCALE_FACTOR = newScale;
+                this.initSkeleton();
+            }
+
+            updateSpeed(newSpeed) {
+                this.moveSpeed = newSpeed;
+            }
+
+            updateFlameIntensity(newIntensity) {
+                this.flameIntensity = newIntensity;
+                const rgb = hexToRgb(document.getElementById('dragonColor').value);
+                GHOSTFLAME_COLOR = `rgba(${rgb.r * newIntensity}, ${rgb.g * newIntensity}, ${rgb.b * newIntensity}, 0.6)`;
+            }
+
+            updateColor(newColor) {
+                BONE_COLOR = newColor;
+                const rgb = hexToRgb(newColor);
+                GHOSTFLAME_COLOR = `rgba(${rgb.r * this.flameIntensity}, ${rgb.g * this.flameIntensity}, ${rgb.b * this.flameIntensity}, 0.6)`;
+            }
+
+            toggleFlightMode() {
+                this.flightMode = !this.flightMode;
+                this.moveSpeed = this.flightMode ? 0.2 : 0.1;
+                document.getElementById('flightMode').textContent = this.flightMode ? 'On' : 'Off';
             }
         }
 
@@ -667,8 +927,10 @@
             dragon.draw();
         }
 
+        // Event Listeners
         let lastClickTime = 0;
-        document.addEventListener('dblclick', () => {
+        document.addEventListener('dblclick', (e) => {
+            e.preventDefault();
             const now = Date.now();
             if (now - lastClickTime > 300) {
                 dragon.roar();
@@ -693,16 +955,94 @@
             dragon.resize();
         });
 
-        document.addEventListener('mouseleave', () => canvas.style.opacity = '0');
-        document.addEventListener('mouseenter', () => canvas.style.opacity = '1');
+        document.addEventListener('mouseleave', () => {
+            canvas.style.opacity = '0';
+            document.querySelector('.overlay').classList.add('hidden');
+            document.querySelector('.hud').classList.add('hidden');
+        });
 
-        // New: Toggle Effects Function
+        document.addEventListener('mouseenter', () => {
+            canvas.style.opacity = '1';
+            document.querySelector('.overlay').classList.remove('hidden');
+            if (dragon.hudVisible) document.querySelector('.hud').classList.remove('hidden');
+        });
+
+        // Settings Controls
+        const scaleInput = document.getElementById('scale');
+        const scaleValue = document.getElementById('scaleValue');
+        scaleInput.addEventListener('input', () => {
+            const value = parseFloat(scaleInput.value);
+            scaleValue.textContent = value.toFixed(1);
+            scaleInput.setAttribute('aria-valuenow', value);
+            dragon.updateScale(value);
+        });
+
+        const speedInput = document.getElementById('speed');
+        const speedValue = document.getElementById('speedValue');
+        speedInput.addEventListener('input', () => {
+            const value = parseFloat(speedInput.value);
+            speedValue.textContent = value.toFixed(2);
+            speedInput.setAttribute('aria-valuenow', value);
+            dragon.updateSpeed(value);
+        });
+
+        const flameIntensityInput = document.getElementById('flameIntensity');
+        const flameIntensityValue = document.getElementById('flameIntensityValue');
+        flameIntensityInput.addEventListener('input', () => {
+            const value = parseFloat(flameIntensityInput.value);
+            flameIntensityValue.textContent = value.toFixed(1);
+            flameIntensityInput.setAttribute('aria-valuenow', value);
+            dragon.updateFlameIntensity(value);
+        });
+
+        const dragonColorInput = document.getElementById('dragonColor');
+        dragonColorInput.addEventListener('input', () => {
+            dragon.updateColor(dragonColorInput.value);
+        });
+
+        // Toggle Functions
         function toggleEffects() {
             dragon.effectsEnabled = !dragon.effectsEnabled;
             document.querySelector('.toggle-effects').textContent = 
                 dragon.effectsEnabled ? 'Toggle Effects Off' : 'Toggle Effects On';
-            canvas.style.filter = dragon.effectsEnabled ? 'none' : 'grayscale(80%)'; // Visual feedback
+            canvas.style.filter = dragon.effectsEnabled ? 'drop-shadow(0 0 20px rgba(50, 205, 50, 0.3))' : 'grayscale(80%)';
         }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            document.querySelector('.toggle-theme').textContent = 
+                document.body.classList.contains('light-theme') ? 'Dark Theme' : 'Light Theme';
+        }
+
+        function toggleHud() {
+            dragon.hudVisible = !dragon.hudVisible;
+            document.querySelector('.toggle-hud').textContent = 
+                dragon.hudVisible ? 'Hide HUD' : 'Show HUD';
+            document.querySelector('.hud').classList.toggle('hidden');
+        }
+
+        function toggleFlightMode() {
+            dragon.toggleFlightMode();
+            document.querySelector('.toggle-flight').textContent = 
+                dragon.flightMode ? 'Disable Flight Mode' : 'Enable Flight Mode';
+        }
+
+        // Keyboard Accessibility
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 't') toggleTheme();
+            if (e.key === 'e') toggleEffects();
+            if (e.key === 'h') toggleHud();
+            if (e.key === 'f') toggleFlightMode();
+            if (e.key === 'r' && dragon.energy > 10) dragon.roar();
+            if (e.key === 'b' && dragon.energy > 5) dragon.breathe();
+        });
+
+        // Hide Loading Screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.querySelector('.loading').classList.add('hidden');
+            }, 1000);
+        });
 
         animate();
     </script>
